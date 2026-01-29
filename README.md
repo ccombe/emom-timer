@@ -1,5 +1,7 @@
 # EMOM Timer
 
+[**🏆 Live Demo &rarr;**](https://ccombe.github.io/emom-timer/)
+
 A simple, lightweight, and portable EMOM (Every Minute on the Minute) timer built as a single HTML file.
 
 ## Features
