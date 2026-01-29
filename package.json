@@ -2,7 +2,7 @@
   "name": "emom-timer",
   "version": "1.0.0",
   "description": "[**🏆 Live Demo &rarr;**](https://ccombe.github.io/emom-timer/)",
-  "main": "app.js",
+  "main": "src/js/app.js",
   "type": "module",
   "scripts": {
     "test": "vitest run",
