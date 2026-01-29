@@ -1,3 +1,5 @@
+import { formatTime, calculateTotalProgress, calculateIntervalProgress, getCurrentRound, getCountdownBeep, isFinished } from './logic.js';
+
 // --- State ---
 let CONFIG = {
     totalDurationSecs: 10 * 60, // 10 minutes
@@ -150,45 +152,36 @@ function clearVisuals() {
 
 // --- Logic ---
 
-function formatTime(seconds) {
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-}
-
 function updateDisplay() {
     // Calculate progress
     const totalElapsed = state.currentTotalElapsed;
 
     // Total Progress
-    const totalProgress = Math.min(totalElapsed / CONFIG.totalDurationSecs, 1);
+    const totalProgress = calculateTotalProgress(totalElapsed, CONFIG.totalDurationSecs);
     const totalDashOffset = TOTAL_CIRCUMFERENCE * (1 - totalProgress);
     totalRing.style.strokeDashoffset = totalDashOffset;
 
     // Interval Progress
-    // We want time elapsed within Current Interval
-    const currentIntervalSec = totalElapsed % CONFIG.intervalSecs;
-    const intervalProgress = currentIntervalSec / CONFIG.intervalSecs;
-
+    const intervalProgress = calculateIntervalProgress(totalElapsed, CONFIG.intervalSecs);
     const intervalDashOffset = INTERVAL_CIRCUMFERENCE * (1 - intervalProgress);
     intervalRing.style.strokeDashoffset = intervalDashOffset;
 
     // Timer Text (Show remaining time in interval)
+    // We want time elapsed within Current Interval
+    const currentIntervalSec = totalElapsed % CONFIG.intervalSecs;
     const intervalTimerVal = Math.floor(currentIntervalSec);
     timerDisplay.textContent = formatTime(intervalTimerVal);
 
     // Rounds
-    const totalRounds = Math.floor(CONFIG.totalDurationSecs / CONFIG.intervalSecs);
-    let currentRound = Math.floor(totalElapsed / CONFIG.intervalSecs) + 1;
-    if (currentRound > totalRounds) currentRound = totalRounds;
+    const { current, total } = getCurrentRound(totalElapsed, CONFIG.intervalSecs, CONFIG.totalDurationSecs);
 
     // If finished
-    if (totalElapsed >= CONFIG.totalDurationSecs - 0.1) { // -0.1 tolerance for float
+    if (isFinished(totalElapsed, CONFIG.totalDurationSecs)) {
         intervalDisplay.textContent = "Done!";
         timerDisplay.textContent = formatTime(0); // or Duration?
         document.title = "Done! - EMOM Timer";
     } else {
-        intervalDisplay.textContent = `Round ${currentRound}/${totalRounds}`;
+        intervalDisplay.textContent = `Round ${current}/${total}`;
         document.title = `${formatTime(intervalTimerVal)} - EMOM Timer`;
     }
 }
@@ -206,29 +199,15 @@ function tick(timestamp) {
     state.currentTotalElapsed = rawElapsed;
 
     // --- Countdown Logic ---
-    const currentIntervalElapsed = state.currentTotalElapsed % CONFIG.intervalSecs;
-    const currentIntervalRemaining = CONFIG.intervalSecs - currentIntervalElapsed;
+    const beepCheck = getCountdownBeep(state.currentTotalElapsed, CONFIG.intervalSecs, state.lastBeepSecond);
 
-    const secondsRemainingInt = Math.ceil(currentIntervalRemaining);
-
-    // Prevent beep on the very first second of first interval or finished
-    if (secondsRemainingInt <= 3 && secondsRemainingInt > 0) {
-        const currentRound = Math.floor(state.currentTotalElapsed / CONFIG.intervalSecs);
-        const beepId = `${currentRound}-${secondsRemainingInt}`;
-
-        if (state.lastBeepSecond !== beepId) {
-            // Pitch shift logic
-            let freq = 440;
-            if (secondsRemainingInt === 2) freq = 554;
-            if (secondsRemainingInt === 1) freq = 659;
-
-            playCountdownBeep(freq);
-            state.lastBeepSecond = beepId;
-        }
+    if (beepCheck.shouldBeep) {
+        playCountdownBeep(beepCheck.freq);
+        state.lastBeepSecond = beepCheck.newBeepId;
     }
 
     // Check for completion
-    if (state.currentTotalElapsed >= CONFIG.totalDurationSecs) {
+    if (isFinished(state.currentTotalElapsed, CONFIG.totalDurationSecs)) {
         state.currentTotalElapsed = CONFIG.totalDurationSecs;
         pauseTimer();
         updateDisplay();

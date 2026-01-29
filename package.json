@@ -1,0 +1,25 @@
+{
+  "name": "emom-timer",
+  "version": "1.0.0",
+  "description": "[**🏆 Live Demo &rarr;**](https://ccombe.github.io/emom-timer/)",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ccombe/emom-timer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ccombe/emom-timer/issues"
+  },
+  "homepage": "https://github.com/ccombe/emom-timer#readme",
+  "devDependencies": {
+    "vitest": "^4.0.18"
+  }
+}
