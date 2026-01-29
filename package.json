@@ -5,7 +5,8 @@
   "main": "app.js",
   "type": "module",
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "coverage": "vitest run --coverage"
   },
   "repository": {
     "type": "git",
@@ -19,6 +20,7 @@
   },
   "homepage": "https://github.com/ccombe/emom-timer#readme",
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.18",
     "vitest": "^4.0.18"
   }
 }
