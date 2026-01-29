@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EMOM Timer</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-color: #ffffff;
+            --accent-color: #00ffcc;
+            /* Neon Teal */
+            --secondary-color: #ff00ff;
+            /* Neon Magenta */
+            --track-color: #333333;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --warning-color: #ffcc00;
+            /* Neon Yellow for warning */
+            --victory-color: #FFD700;
+            /* Gold */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+            transition: background-color 0.5s;
+        }
+
+        body.victory {
+            animation: victory-pulse 2s infinite;
+        }
+
+        @keyframes victory-pulse {
+            0% {
+                background-color: var(--bg-color);
+                box-shadow: inset 0 0 0px 0px var(--victory-color);
+            }
+
+            50% {
+                background-color: #1a1a00;
+                box-shadow: inset 0 0 100px 20px rgba(255, 215, 0, 0.2);
+            }
+
+            100% {
+                background-color: var(--bg-color);
+                box-shadow: inset 0 0 0px 0px var(--victory-color);
+            }
+        }
+
+        .container {
+            position: relative;
+            width: 80vmin;
+            height: 80vmin;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Trophy Overlay */
+        #trophy-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 20vmin;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 5;
+        }
+
+        #trophy-overlay.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        /* SVG Rings */
+        svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        circle {
+            fill: none;
+            stroke-linecap: round;
+        }
+
+        .ring-bg {
+            stroke: var(--track-color);
+        }
+
+        .ring-fg {
+            transition: stroke-dashoffset 0.1s linear;
+        }
+
+        #interval-ring-fg {
+            stroke: var(--accent-color);
+        }
+
+        #total-ring-fg {
+            stroke: var(--secondary-color);
+        }
+
+        /* Center Info */
+        .info {
+            position: absolute;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 50%;
+            height: 50%;
+        }
+
+        .timer-text {
+            font-size: 8vmin;
+            font-weight: bold;
+            font-variant-numeric: tabular-nums;
+            margin: 0;
+        }
+
+        .sub-text {
+            font-size: 3vmin;
+            color: #aaa;
+            margin-top: 1vmin;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 5vmin;
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            backdrop-filter: blur(5px);
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.primary {
+            background: var(--accent-color);
+            color: black;
+            border: none;
+            font-weight: bold;
+        }
+
+        button.primary:hover {
+            opacity: 0.9;
+            background: var(--accent-color);
+        }
+
+        /* Settings Panel */
+        #settings-panel {
+            position: fixed;
+            bottom: 15vmin;
+            /* Above controls */
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid #333;
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 20;
+            backdrop-filter: blur(10px);
+            width: 80vmin;
+            max-width: 300px;
+            transition: opacity 0.3s, transform 0.3s;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+        }
+
+        #settings-panel.visible {
+            opacity: 1;
+            pointer-events: all;
+            transform: translateY(0);
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .setting-group label {
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        select {
+            background: #222;
+            color: white;
+            border: 1px solid #444;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        /* Settings Toggle */
+        #settings-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 1.5rem;
+            padding: 10px;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        #settings-toggle:hover {
+            color: white;
+            background: none;
+            transform: rotate(90deg);
+        }
+
+        /* Initialization Overlay */
+        #init-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #init-overlay h1 {
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <button id="settings-toggle" title="Settings">☰</button>
+
+    <div id="settings-panel">
+        <div class="setting-group">
+            <label>Total Duration</label>
+            <select id="total-duration-select">
+                <option value="300">5 Minutes</option>
+                <option value="600" selected>10 Minutes</option>
+                <option value="900">15 Minutes</option>
+                <option value="1200">20 Minutes</option>
+                <option value="1800">30 Minutes</option>
+                <option value="2400">40 Minutes</option>
+                <option value="3600">60 Minutes</option>
+            </select>
+        </div>
+        <div class="setting-group">
+            <label>Interval Duration</label>
+            <select id="interval-duration-select">
+                <option value="30">30 Seconds</option>
+                <option value="45">45 Seconds</option>
+                <option value="60" selected>1 Minute</option>
+                <option value="90">1 Minute 30 Seconds</option>
+                <option value="120">2 Minutes</option>
+                <option value="180">3 Minutes</option>
+                <option value="300">5 Minutes</option>
+            </select>
+        </div>
+        <button id="close-settings-btn" style="width:100%; margin-top:10px;">Done</button>
+    </div>
+
+    <div class="container">
+        <!-- SVG container -->
+        <svg viewBox="0 0 200 200">
+            <!-- Total Timer Ring (Inner) -->
+            <circle cx="100" cy="100" r="40" stroke-width="8" class="ring-bg" />
+            <circle id="total-ring-fg" cx="100" cy="100" r="40" stroke-width="8" class="ring-fg"
+                stroke-dasharray="251.3" stroke-dashoffset="0" />
+
+            <!-- Interval Timer Ring (Outer) -->
+            <circle cx="100" cy="100" r="70" stroke-width="12" class="ring-bg" />
+            <circle id="interval-ring-fg" cx="100" cy="100" r="70" stroke-width="12" class="ring-fg"
+                stroke-dasharray="439.8" stroke-dashoffset="0" />
+        </svg>
+
+        <div class="info">
+            <h1 id="timer-display" class="timer-text">00:00</h1>
+            <div id="interval-display" class="sub-text">Round 1/10</div>
+        </div>
+
+        <div id="trophy-overlay">🏆</div>
+    </div>
+
+    <div class="controls" id="cntrls">
+        <button id="start-btn" class="primary">Start</button>
+        <button id="reset-btn">Reset</button>
+    </div>
+
+    <!-- Audio Context Start Overlay -->
+    <div id="init-overlay">
+        <h1>EMOM Timer</h1>
+        <button id="init-btn" class="primary" style="font-size: 1.5rem; padding: 15px 40px;">Tap to Start</button>
+    </div>
+
+    <script>
+        // --- State ---
+        let CONFIG = {
+            totalDurationSecs: 10 * 60, // 10 minutes
+            intervalSecs: 60,           // 1 minute
+        };
+
+        let state = {
+            isRunning: false,
+            startTime: 0,
+            elapsedPaused: 0,
+            lastFrameTime: 0,
+            currentTotalElapsed: 0, // In seconds
+            lastBeepSecond: -1 // Track the last second we beeped for countdown
+        };
+
+        let animationFrameId;
+        let audioCtx;
+
+        // --- DOM Elements ---
+        const timerDisplay = document.getElementById('timer-display');
+        const intervalDisplay = document.getElementById('interval-display');
+        const totalRing = document.getElementById('total-ring-fg');
+        const intervalRing = document.getElementById('interval-ring-fg');
+        const startBtn = document.getElementById('start-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const initOverlay = document.getElementById('init-overlay');
+        const initBtn = document.getElementById('init-btn');
+        const trophyOverlay = document.getElementById('trophy-overlay');
+
+        // Settings UI
+        const settingsToggle = document.getElementById('settings-toggle');
+        const settingsPanel = document.getElementById('settings-panel');
+        const closeSettingsBtn = document.getElementById('close-settings-btn');
+        const totalDurationSelect = document.getElementById('total-duration-select');
+        const intervalDurationSelect = document.getElementById('interval-duration-select');
+
+        // --- Constants for SVG ---
+        const TOTAL_CIRCUMFERENCE = 2 * Math.PI * 40;
+        const INTERVAL_CIRCUMFERENCE = 2 * Math.PI * 70;
+
+        // --- Audio ---
+        // Simple synthesized bell sound
+        function playBell() {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            // Bell-like parameters
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // High A
+            osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.1);
+
+            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 1.5);
+        }
+
+        function playEndSound() {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            // Victory Fanfare: Rising C Major Arpeggio + Chord
+            const now = audioCtx.currentTime;
+
+            // Notes: C5, E5, G5, C6
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.type = 'triangle'; // triangle sounds a bit more 'gamey'/'fun' than sine
+                osc.frequency.value = freq;
+
+                // Stagger starts: 0, 0.1, 0.2, 0.3
+                const startTime = now + (i * 0.1);
+                const duration = 0.8;
+
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            });
+
+            // Final root chord hold for extra punch
+            setTimeout(() => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.type = 'square'; // chiptune style punch
+                osc.frequency.value = 523.25; // C5
+
+                const finalStart = now + 0.4;
+                gain.gain.setValueAtTime(0, finalStart);
+                gain.gain.linearRampToValueAtTime(0.2, finalStart + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, finalStart + 1.5);
+
+                osc.start(finalStart);
+                osc.stop(finalStart + 1.5);
+            }, 0);
+        }
+
+        function playCountdownBeep(frequency = 440) {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+
+            // Short pip
+            gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        // --- Visual Effects ---
+        function triggerVictoryVisuals() {
+            document.body.classList.add('victory');
+            trophyOverlay.classList.add('show');
+        }
+
+        function clearVisuals() {
+            document.body.classList.remove('victory');
+            trophyOverlay.classList.remove('show');
+        }
+
+        // --- Logic ---
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateDisplay() {
+            // Calculate progress
+            const totalElapsed = state.currentTotalElapsed;
+
+            // Total Progress
+            const totalProgress = Math.min(totalElapsed / CONFIG.totalDurationSecs, 1);
+            const totalDashOffset = TOTAL_CIRCUMFERENCE * (1 - totalProgress);
+            totalRing.style.strokeDashoffset = totalDashOffset;
+
+            // Interval Progress
+            // We want time elapsed within Current Interval
+            const currentIntervalSec = totalElapsed % CONFIG.intervalSecs;
+            const intervalProgress = currentIntervalSec / CONFIG.intervalSecs;
+
+            const intervalDashOffset = INTERVAL_CIRCUMFERENCE * (1 - intervalProgress);
+            intervalRing.style.strokeDashoffset = intervalDashOffset;
+
+            // Timer Text (Show remaining time in interval)
+            const intervalTimerVal = Math.floor(currentIntervalSec);
+            timerDisplay.textContent = formatTime(intervalTimerVal);
+
+            // Rounds
+            const totalRounds = Math.floor(CONFIG.totalDurationSecs / CONFIG.intervalSecs);
+            let currentRound = Math.floor(totalElapsed / CONFIG.intervalSecs) + 1;
+            if (currentRound > totalRounds) currentRound = totalRounds;
+
+            // If finished
+            if (totalElapsed >= CONFIG.totalDurationSecs - 0.1) { // -0.1 tolerance for float
+                intervalDisplay.textContent = "Done!";
+                timerDisplay.textContent = formatTime(0); // or Duration?
+            } else {
+                intervalDisplay.textContent = `Round ${currentRound}/${totalRounds}`;
+            }
+        }
+
+        let lastIntervalIndex = -1;
+
+        function tick(timestamp) {
+            if (!state.isRunning) return;
+
+            if (!state.startTime) state.startTime = timestamp;
+
+            const now = Date.now();
+            const rawElapsed = (now - state.startTime) / 1000;
+
+            state.currentTotalElapsed = rawElapsed;
+
+            // --- Countdown Logic ---
+            const currentIntervalElapsed = state.currentTotalElapsed % CONFIG.intervalSecs;
+            const currentIntervalRemaining = CONFIG.intervalSecs - currentIntervalElapsed;
+
+            const secondsRemainingInt = Math.ceil(currentIntervalRemaining);
+
+            // Prevent beep on the very first second of first interval or finished
+            if (secondsRemainingInt <= 3 && secondsRemainingInt > 0) {
+                const currentRound = Math.floor(state.currentTotalElapsed / CONFIG.intervalSecs);
+                const beepId = `${currentRound}-${secondsRemainingInt}`;
+
+                if (state.lastBeepSecond !== beepId) {
+                    // Pitch shift logic
+                    let freq = 440;
+                    if (secondsRemainingInt === 2) freq = 554;
+                    if (secondsRemainingInt === 1) freq = 659;
+
+                    playCountdownBeep(freq);
+                    state.lastBeepSecond = beepId;
+                }
+            }
+
+            // Check for completion
+            if (state.currentTotalElapsed >= CONFIG.totalDurationSecs) {
+                state.currentTotalElapsed = CONFIG.totalDurationSecs;
+                pauseTimer();
+                updateDisplay();
+                // Play final sound & Visuals
+                playEndSound();
+                triggerVictoryVisuals();
+                return;
+            }
+
+            // Check for interval bell (Round Start)
+            const currentIntervalIndex = Math.floor(state.currentTotalElapsed / CONFIG.intervalSecs);
+            if (currentIntervalIndex > lastIntervalIndex && currentIntervalIndex > 0) {
+                playBell();
+                lastIntervalIndex = currentIntervalIndex;
+            }
+
+            updateDisplay();
+
+            animationFrameId = requestAnimationFrame(tick);
+        }
+
+        function startTimer() {
+            if (state.isRunning) return;
+
+            // Resume Audio Context if needed
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            state.isRunning = true;
+            startBtn.innerText = "Pause";
+
+            // Adjust start time to respect elapsed
+            state.startTime = Date.now() - (state.currentTotalElapsed * 1000);
+
+            if (state.currentTotalElapsed === 0) {
+                lastIntervalIndex = 0;
+                playBell();
+                clearVisuals(); // Ensure clean start
+            }
+
+            tick();
+        }
+
+        // New Pre-Start Sequence
+        function startWithCountdown() {
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+
+            clearVisuals(); // Clear any victory state
+            startBtn.disabled = true;
+            settingsToggle.style.pointerEvents = 'none'; // Lock settings
+
+            let count = 3;
+            timerDisplay.textContent = "READY";
+            intervalDisplay.textContent = "Starting in " + count;
+
+            playCountdownBeep(440); // 3 (Low)
+
+            const countdownInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    intervalDisplay.textContent = "Starting in " + count;
+                    // Beep pitch up
+                    let freq = 440;
+                    if (count === 2) freq = 554;
+                    if (count === 1) freq = 659;
+                    playCountdownBeep(freq);
+                } else {
+                    clearInterval(countdownInterval);
+                    startBtn.disabled = false;
+                    settingsToggle.style.pointerEvents = 'all';
+                    startTimer();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            state.isRunning = false;
+            startBtn.innerText = "Resume";
+            cancelAnimationFrame(animationFrameId);
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            state.currentTotalElapsed = 0;
+            state.startTime = 0;
+            lastIntervalIndex = -1;
+            startBtn.innerText = "Start";
+            updateDisplay();
+            clearVisuals(); // Reset effects
+        }
+        function toggleTimer() {
+            if (state.isRunning) {
+                pauseTimer();
+            } else {
+                if (state.currentTotalElapsed >= CONFIG.totalDurationSecs) {
+                    resetTimer(); // Auto reset if finished
+                    startWithCountdown();
+                } else if (state.currentTotalElapsed === 0) {
+                    // Start fresh -> Countdown
+                    startWithCountdown();
+                } else {
+                    // Resume -> Immediate
+                    startTimer();
+                }
+            }
+        }
+
+        // --- Init ---
+        startBtn.addEventListener('click', toggleTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        // Audio Context Init
+        initBtn.addEventListener('click', () => {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            initOverlay.style.display = 'none';
+        });
+
+        // Settings Logic
+        settingsToggle.addEventListener('click', () => {
+            settingsPanel.classList.toggle('visible');
+        });
+
+        closeSettingsBtn.addEventListener('click', () => {
+            settingsPanel.classList.remove('visible');
+            applySettings();
+        });
+
+        function applySettings() {
+            // Only allow changing settings if timer is reset? 
+            // Or allow dynamic? Dynamic is messy if mid-round.
+            // Let's reset if settings change to keep logic simple.
+            const newTotal = parseInt(totalDurationSelect.value);
+            const newInterval = parseInt(intervalDurationSelect.value);
+
+            if (newTotal !== CONFIG.totalDurationSecs || newInterval !== CONFIG.intervalSecs) {
+                CONFIG.totalDurationSecs = newTotal;
+                CONFIG.intervalSecs = newInterval;
+                resetTimer(); // Enforce reset on config change
+            }
+        }
+
+        // Initialize state
+        updateDisplay();
+
+    </script>
+</body>
+
+</html>
