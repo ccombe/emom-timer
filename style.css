@@ -1,0 +1,265 @@
+:root {
+    --bg-color: #121212;
+    --text-color: #ffffff;
+    --accent-color: #00ffcc;
+    /* Neon Teal */
+    --secondary-color: #ff00ff;
+    /* Neon Magenta */
+    --track-color: #333333;
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --warning-color: #ffcc00;
+    /* Neon Yellow for warning */
+    --victory-color: #FFD700;
+    /* Gold */
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-family);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+    touch-action: manipulation;
+    transition: background-color 0.5s;
+}
+
+body.victory {
+    animation: victory-pulse 2s infinite;
+}
+
+@keyframes victory-pulse {
+    0% {
+        background-color: var(--bg-color);
+        box-shadow: inset 0 0 0px 0px var(--victory-color);
+    }
+
+    50% {
+        background-color: #1a1a00;
+        box-shadow: inset 0 0 100px 20px rgba(255, 215, 0, 0.2);
+    }
+
+    100% {
+        background-color: var(--bg-color);
+        box-shadow: inset 0 0 0px 0px var(--victory-color);
+    }
+}
+
+.container {
+    position: relative;
+    width: 80vmin;
+    height: 80vmin;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Trophy Overlay */
+#trophy-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: 20vmin;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 5;
+}
+
+#trophy-overlay.show {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+/* SVG Rings */
+svg {
+    transform: rotate(-90deg);
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+circle {
+    fill: none;
+    stroke-linecap: round;
+}
+
+.ring-bg {
+    stroke: var(--track-color);
+}
+
+.ring-fg {
+    transition: stroke-dashoffset 0.1s linear;
+}
+
+#interval-ring-fg {
+    stroke: var(--accent-color);
+}
+
+#total-ring-fg {
+    stroke: var(--secondary-color);
+}
+
+/* Center Info */
+.info {
+    position: absolute;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 50%;
+    height: 50%;
+}
+
+.timer-text {
+    font-size: 8vmin;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+    margin: 0;
+}
+
+.sub-text {
+    font-size: 3vmin;
+    color: #aaa;
+    margin-top: 1vmin;
+}
+
+.controls {
+    position: absolute;
+    bottom: 5vmin;
+    display: flex;
+    gap: 20px;
+    z-index: 10;
+}
+
+button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 10px 20px;
+    font-size: 1rem;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    backdrop-filter: blur(5px);
+}
+
+button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+button.primary {
+    background: var(--accent-color);
+    color: black;
+    border: none;
+    font-weight: bold;
+}
+
+button.primary:hover {
+    opacity: 0.9;
+    background: var(--accent-color);
+}
+
+/* Settings Panel */
+#settings-panel {
+    position: fixed;
+    bottom: 15vmin;
+    /* Above controls */
+    background: rgba(20, 20, 20, 0.95);
+    border: 1px solid #333;
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 20;
+    backdrop-filter: blur(10px);
+    width: 80vmin;
+    max-width: 300px;
+    transition: opacity 0.3s, transform 0.3s;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
+}
+
+#settings-panel.visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+}
+
+.setting-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.setting-group label {
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+select {
+    background: #222;
+    color: white;
+    border: 1px solid #444;
+    padding: 8px;
+    border-radius: 5px;
+    font-size: 1rem;
+    outline: none;
+}
+
+/* Settings Toggle */
+#settings-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 1.5rem;
+    padding: 10px;
+    cursor: pointer;
+    z-index: 100;
+}
+
+#settings-toggle:hover {
+    color: white;
+    background: none;
+    transform: rotate(90deg);
+}
+
+/* Initialization Overlay */
+#init-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#init-overlay h1 {
+    margin-bottom: 2rem;
+    font-size: 2rem;
+    text-align: center;
+}

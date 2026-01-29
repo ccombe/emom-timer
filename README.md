@@ -6,7 +6,7 @@ A simple, lightweight, and portable EMOM (Every Minute on the Minute) timer buil
 
 ## Features
 
-* **Single File Portability**: Runs entirely in the browser with no external dependencies or internet connection required.
+* **Portability**: Runs entirely in the browser with no external dependencies or internet connection required.
 * **Visual Feedback**:
   * **Interval Ring**: Fills up as the minute progresses.
   * **Total Progress Ring**: Tracks the overall session completion.
