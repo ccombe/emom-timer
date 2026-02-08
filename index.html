@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EMOM Timer</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="src/css/style.css">
@@ -15,84 +15,87 @@
     <button id="settings-toggle" title="Settings">☰</button>
     <div id="fit-status-icon" class="fit-icon" title="Google Fit Status"></div>
 
-    <div id="settings-panel">
-        <div class="setting-group">
-            <label for="interval-count-input">Number of Rounds</label>
-            <input type="number" id="interval-count-input" value="5" min="1" max="99"
-                style="background: #222; color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; font-size: 1rem; outline: none;">
-        </div>
-        <div class="setting-group">
-            <label for="interval-duration-select">Interval Duration</label>
-            <select id="interval-duration-select">
-                <option value="30">30 Seconds</option>
-                <option value="45">45 Seconds</option>
-                <option value="60" selected>1 Minute</option>
-                <option value="90">1 Minute 30 Seconds</option>
-                <option value="120">2 Minutes</option>
-                <option value="180">3 Minutes</option>
-                <option value="300">5 Minutes</option>
-            </select>
-        </div>
-        <div class="setting-group">
-            <label for="activity-type-select">Activity Type</label>
-            <select id="activity-type-select">
-                <option value="114">HIIT</option>
-                <option value="115" selected>Kettlebell Training</option>
-                <option value="113">Crossfit</option>
-                <option value="15">Circuit Training</option>
-                <option value="10">Bootcamp</option>
-                <option value="21">Calisthenics</option>
-                <option value="97">Weight Lifting</option>
-                <option value="97">Other</option>
-            </select>
-        </div>
-
-        <div class="setting-group" style="margin-top:20px; text-align:center;">
-            <div
-                style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; background:#222; padding:10px; border-radius:5px;">
-                <label for="location-toggle" style="margin:0; font-size:0.9rem;">Include GPS Location</label>
-                <input type="checkbox" id="location-toggle" style="width:20px; height:20px;">
+    <main>
+        <div id="settings-panel">
+            <div class="setting-group">
+                <label for="interval-count-input">Number of Rounds</label>
+                <input type="number" id="interval-count-input" value="5" min="1" max="99"
+                    style="background: #222; color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; font-size: 1rem; outline: none;">
             </div>
-            <p style="font-size:0.75rem; color:#b0b0b0; margin-bottom:15px; text-align:left;">
-                When enabled, your workout location will be saved to Google Fit.
-            </p>
-
-            <button id="connect-google-fit-btn" class="secondary" style="width:100%;">Connect Google Fit</button>
-            <div id="google-fit-status" style="font-size:0.8rem; margin-top:5px; color:#c0c0c0;">Not Connected</div>
-        </div>
-
-        <button id="close-settings-btn" style="width:100%; margin-top:10px;">Done</button>
-    </div>
-
-    <div class="container">
-        <!-- SVG container -->
-        <svg viewBox="0 0 200 200">
-            <!-- Total Timer Ring (Inner) -->
-            <circle cx="100" cy="100" r="40" stroke-width="8" class="ring-bg" />
-            <circle id="total-ring-fg" cx="100" cy="100" r="40" stroke-width="8" class="ring-fg"
-                stroke-dasharray="251.3" stroke-dashoffset="0" />
-
-            <!-- Interval Timer Ring (Outer) -->
-            <circle cx="100" cy="100" r="70" stroke-width="12" class="ring-bg" />
-            <circle id="interval-ring-fg" cx="100" cy="100" r="70" stroke-width="12" class="ring-fg"
-                stroke-dasharray="439.8" stroke-dashoffset="0" />
-        </svg>
-
-        <div class="info">
-            <h1 id="timer-display" class="timer-text">00:00</h1>
-            <div id="interval-display" class="sub-text">Round 1/10</div>
-            <div id="streak-display" class="sub-text" style="font-size: 1rem; margin-top: 5px; opacity: 0.8;">Streak: 0
+            <div class="setting-group">
+                <label for="interval-duration-select">Interval Duration</label>
+                <select id="interval-duration-select">
+                    <option value="30">30 Seconds</option>
+                    <option value="45">45 Seconds</option>
+                    <option value="60" selected>1 Minute</option>
+                    <option value="90">1 Minute 30 Seconds</option>
+                    <option value="120">2 Minutes</option>
+                    <option value="180">3 Minutes</option>
+                    <option value="300">5 Minutes</option>
+                </select>
             </div>
+            <div class="setting-group">
+                <label for="activity-type-select">Activity Type</label>
+                <select id="activity-type-select">
+                    <option value="114">HIIT</option>
+                    <option value="115" selected>Kettlebell Training</option>
+                    <option value="113">Crossfit</option>
+                    <option value="15">Circuit Training</option>
+                    <option value="10">Bootcamp</option>
+                    <option value="21">Calisthenics</option>
+                    <option value="97">Weight Lifting</option>
+                    <option value="97">Other</option>
+                </select>
+            </div>
+
+            <div class="setting-group" style="margin-top:20px; text-align:center;">
+                <div
+                    style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; background:#222; padding:10px; border-radius:5px;">
+                    <label for="location-toggle" style="margin:0; font-size:0.9rem;">Include GPS Location</label>
+                    <input type="checkbox" id="location-toggle" style="width:20px; height:20px;">
+                </div>
+                <p style="font-size:0.75rem; color:#b0b0b0; margin-bottom:15px; text-align:left;">
+                    When enabled, your workout location will be saved to Google Fit.
+                </p>
+
+                <button id="connect-google-fit-btn" class="secondary" style="width:100%;">Connect Google Fit</button>
+                <div id="google-fit-status" style="font-size:0.8rem; margin-top:5px; color:#c0c0c0;">Not Connected</div>
+            </div>
+
+            <button id="close-settings-btn" style="width:100%; margin-top:10px;">Done</button>
         </div>
 
-        <div id="trophy-overlay">🏆</div>
-    </div>
+        <div class="container">
+            <!-- SVG container -->
+            <svg viewBox="0 0 200 200">
+                <!-- Total Timer Ring (Inner) -->
+                <circle cx="100" cy="100" r="40" stroke-width="8" class="ring-bg" />
+                <circle id="total-ring-fg" cx="100" cy="100" r="40" stroke-width="8" class="ring-fg"
+                    stroke-dasharray="251.3" stroke-dashoffset="0" />
 
-    <div class="controls" id="cntrls">
-        <button id="start-btn" class="primary">Start</button>
-        <button id="reset-btn">Reset</button>
-    </div>
+                <!-- Interval Timer Ring (Outer) -->
+                <circle cx="100" cy="100" r="70" stroke-width="12" class="ring-bg" />
+                <circle id="interval-ring-fg" cx="100" cy="100" r="70" stroke-width="12" class="ring-fg"
+                    stroke-dasharray="439.8" stroke-dashoffset="0" />
+            </svg>
 
+            <div class="info">
+                <h1 id="timer-display" class="timer-text">00:00</h1>
+                <div id="interval-display" class="sub-text">Round 1/10</div>
+                <div id="streak-display" class="sub-text" style="font-size: 1rem; margin-top: 5px; opacity: 0.8;">
+                    Streak: 0
+                </div>
+            </div>
+
+            <div id="trophy-overlay">🏆</div>
+        </div>
+
+        <div class="controls" id="cntrls">
+            <button id="start-btn" class="primary">Start</button>
+            <button id="reset-btn">Reset</button>
+        </div>
+
+    </main>
 
     <script type="module" src="src/ts/app.ts"></script>
 </body>
