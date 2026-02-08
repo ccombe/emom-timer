@@ -49,6 +49,8 @@ jobs:
     
     - name: Build for production
       run: pnpm build
+      env:
+        VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
       
     - name: Setup Pages
       uses: actions/configure-pages@v5
