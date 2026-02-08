@@ -243,23 +243,51 @@ select {
     transform: rotate(90deg);
 }
 
-/* Initialization Overlay */
-#init-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+
+
+/* Google Fit Status Icon */
+.fit-icon {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #555;
+    /* Disconnected / Unknown */
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+    z-index: 100;
+    pointer-events: none;
+    /* Let clicks pass through if needed, or add tooltip */
 }
 
-#init-overlay h1 {
-    margin-bottom: 2rem;
-    font-size: 2rem;
-    text-align: center;
+.fit-icon.connected {
+    background-color: #4caf50;
+    /* Green */
+    box-shadow: 0 0 8px #4caf50;
+}
+
+.fit-icon.syncing {
+    background-color: #2196f3;
+    /* Blue */
+    box-shadow: 0 0 8px #2196f3;
+    animation: pulse-blue 1s infinite;
+}
+
+@keyframes pulse-blue {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
