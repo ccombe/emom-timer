@@ -203,8 +203,10 @@ export class GoogleFitService {
     }
 
     private containsWorkout(points: { value: { intVal: number }[] }[]): boolean {
+        // Activity types used by this app (from index.html activity-type-select)
+        const validActivityTypes = [10, 15, 21, 97, 113, 114, 115];
         return points.some(p => {
-            return p.value && p.value.length > 0 && p.value[0].intVal === 114; // HIIT
+            return p.value && p.value.length > 0 && validActivityTypes.includes(p.value[0].intVal);
         });
     }
 
