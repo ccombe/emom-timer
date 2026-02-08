@@ -46,6 +46,22 @@ We have big plans to expand this tool while keeping it simple and effective:
   * **Cloud Sync**: Optional account to sync workouts across devices.
   * **Google Fit / Apple Health**: Integration to log workouts automatically.
 
+## Architecture
+
+```mermaid
+graph TD
+    User[User] -->|Interacts| UI["Web Interface (Vanilla JS)"]
+    UI -->|Logic| App[App Logic]
+    App -->|Persists| DB[(IndexedDB (Local Storage))]
+    App -->|Syncs (Planned)| GoogleFit[Google Fit API]
+    
+    subgraph "Client Side (GitHub Pages)"
+        UI
+        App
+        DB
+    end
+```
+
 ## License
 
 MIT
