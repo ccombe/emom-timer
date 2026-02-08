@@ -47,7 +47,7 @@ const engine = new TimerEngine(CONFIG, callbacks);
 
 // --- Event Listeners for Fit Status ---
 document.addEventListener('google-fit-connected', () => {
-    ui.updateFitUI('connected');
+    ui.setFitConnectedState(); // Update button text and status
     // Refresh Streak with Cloud Data
     updateStreak();
 });
@@ -228,6 +228,11 @@ function applySettings() {
 
     CONFIG.activityType = newActivityType;
     CONFIG.includeLocation = newIncludeLocation;
+
+    // Try to acquire location if just enabled
+    if (newIncludeLocation && googleFit.isConnected()) {
+        tryAcquireLocation();
+    }
 
     if (newIntervalCount !== CONFIG.intervalCount || newInterval !== CONFIG.intervalSecs) {
         CONFIG.intervalCount = newIntervalCount;
