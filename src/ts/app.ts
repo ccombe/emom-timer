@@ -1,6 +1,7 @@
 // --- Imports ---
 import {
-    calculateStreak
+    calculateStreak,
+    normalizeConfig
 } from './logic.ts';
 import { StorageService } from './storage.ts';
 import { googleFit } from './google-fit.ts';
@@ -209,7 +210,7 @@ ui.settingsToggle.addEventListener('click', () => {
 });
 
 ui.closeSettingsBtn.addEventListener('click', () => {
-    ui.toggleSettings(false); // Close
+    ui.toggleSettings(false); console.log('Applying settings...');
     audio.ensureAudioContext();
     applySettings();
 });
@@ -221,32 +222,49 @@ ui.connectFitBtn.addEventListener('click', () => {
 });
 
 function applySettings() {
-    const newIntervalCount = parseInt(ui.intervalCountInput.value) || 1;
-    const newInterval = parseInt(ui.intervalDurationSelect.value);
-    const newActivityType = parseInt(ui.activityTypeSelect.value) || 115;
-    const newIncludeLocation = ui.locationToggle.checked;
+    const newSettings = {
+        intervalCount: parseInt(ui.intervalCountInput.value) || 1,
+        intervalSecs: parseInt(ui.intervalDurationSelect.value),
+        activityType: parseInt(ui.activityTypeSelect.value) || 115,
+        includeLocation: ui.locationToggle.checked
+    };
 
-    // Save to storage
-    storage.saveSettings({
-        intervalCount: newIntervalCount,
-        intervalSecs: newInterval,
-        activityType: newActivityType,
-        includeLocation: newIncludeLocation,
-        setupComplete: true
-    });
+    saveAndApplyConfig(newSettings);
+    handleLocationUpdate(newSettings.includeLocation);
+    handleTimerUpdate(newSettings.intervalCount, newSettings.intervalSecs);
+}
 
-    CONFIG.activityType = newActivityType;
-    CONFIG.includeLocation = newIncludeLocation;
+function saveAndApplyConfig(settings: { intervalCount: number, intervalSecs: number, activityType: number, includeLocation: boolean }) {
+    storage.saveSettings({ ...settings, setupComplete: true });
 
-    // Try to acquire location if just enabled
-    if (newIncludeLocation && googleFit.isConnected()) {
+    CONFIG.activityType = settings.activityType;
+    CONFIG.includeLocation = settings.includeLocation;
+}
+
+function handleLocationUpdate(newIncludeLocation: boolean) {
+    const shouldAcquire = newIncludeLocation && !CONFIG.includeLocation && googleFit.isConnected();
+    if (shouldAcquire) {
         tryAcquireLocation();
     }
+}
 
-    if (newIntervalCount !== CONFIG.intervalCount || newInterval !== CONFIG.intervalSecs) {
+function handleTimerUpdate(newIntervalCount: number, newIntervalSecs: number) {
+    const timerParamsChanged = newIntervalCount !== CONFIG.intervalCount ||
+        newIntervalSecs !== CONFIG.intervalSecs;
+
+    if (timerParamsChanged) {
         CONFIG.intervalCount = newIntervalCount;
-        CONFIG.intervalSecs = newInterval;
-        resetTimer(); // Enforce reset on config change
+        CONFIG.intervalSecs = newIntervalSecs;
+        resetTimer();
+    } else {
+        // Just update config for non-timer-structural changes
+        CONFIG.intervalCount = newIntervalCount;
+        CONFIG.intervalSecs = newIntervalSecs;
+
+        // Refresh display if not running to ensure fresh state visibility
+        if (!engine.state.isRunning) {
+            ui.updateDisplay(engine.state, CONFIG);
+        }
     }
 }
 
@@ -254,17 +272,15 @@ function applySettings() {
 
 async function loadSettings() {
     const settings = await storage.loadSettings();
-    if (settings) {
-        CONFIG.intervalSecs = settings.intervalSecs || CONFIG.intervalSecs;
-        CONFIG.activityType = settings.activityType || 115;
-        CONFIG.includeLocation = settings.includeLocation || false;
 
-        if (settings.intervalCount) {
-            CONFIG.intervalCount = settings.intervalCount;
-        } else if ('totalDurationSecs' in settings) {
-            const legacy = settings as unknown as { totalDurationSecs: number };
-            CONFIG.intervalCount = Math.floor(legacy.totalDurationSecs / CONFIG.intervalSecs) || 5;
-        }
+    if (settings) {
+        const normalized = normalizeConfig(settings, CONFIG);
+
+        // Update in-place to preserve reference for engine
+        CONFIG.intervalCount = normalized.intervalCount;
+        CONFIG.intervalSecs = normalized.intervalSecs;
+        CONFIG.activityType = normalized.activityType;
+        CONFIG.includeLocation = normalized.includeLocation;
 
         // Apply to UI
         ui.setSettingsInputs(CONFIG);

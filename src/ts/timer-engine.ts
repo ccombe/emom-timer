@@ -111,7 +111,7 @@ export class TimerEngine {
         });
 
         if (beepCheck.shouldBeep) {
-            this.callbacks.onCountdownBeep(beepCheck.freq);
+            this.callbacks.onCountdownBeep(beepCheck.frequency);
             this.state.lastBeepSecond = beepCheck.newBeepId;
         }
     }

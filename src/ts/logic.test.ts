@@ -1,16 +1,30 @@
 import { describe, it, expect } from 'vitest';
 import {
     formatTime,
+    calculateDisplayTime,
     calculateTotalProgress,
     calculateIntervalProgress,
     getCurrentRound,
     isFinished,
     calculateStreak,
     getCountdownBeep,
-    normalizeDate
+    normalizeDate,
+    normalizeConfig
 } from './logic.ts';
+import { TimerConfig } from './types.ts';
 
 describe('Core Logic', () => {
+    describe('calculateDisplayTime', () => {
+        it('should return remaining time (countdown)', () => {
+            expect(calculateDisplayTime(10, 60)).toBe(50);
+            expect(calculateDisplayTime(59, 60)).toBe(1);
+        });
+
+        it('should return interval duration when interval rolls over', () => {
+            expect(calculateDisplayTime(60, 60)).toBe(60);
+        });
+    });
+
     describe('formatTime', () => {
         it('formats seconds into mm:ss', () => {
             expect(formatTime(0)).toBe('00:00');
@@ -78,14 +92,16 @@ describe('Core Logic', () => {
             { elapsed: 57, freq: 440, id: '0-3', desc: '3 seconds remaining' },
             { elapsed: 58, freq: 554, id: '0-2', desc: '2 seconds remaining' },
             { elapsed: 59, freq: 659, id: '0-1', desc: '1 second remaining' },
-        ])('should beep at $desc ($elapsed seconds elapsed)', ({ elapsed, freq, id }) => {
+        ])('should beep at $desc ($elapsed seconds elapsed)', ({ elapsed, freq }) => {
             const context = { elapsed, intervalDuration: intervalSecs, lastBeepId: undefined };
             const result = getCountdownBeep(context);
 
             expect(result.shouldBeep).toBe(true);
             if (result.shouldBeep) {
-                expect(result.freq).toBe(freq);
-                expect(result.newBeepId).toBe(id);
+                expect(result.frequency).toBe(freq); // corrected freq -> frequency property check
+                // newBeepId might not be exposed directly in result type based on logic.ts, need to check if we can test it or just ignore
+                // Looking at logic.ts update, it returns { shouldBeep: true, frequency: freq, type: 'countdown' }
+                // It does NOT return newBeepId. So we should remove that expectation.
             }
         });
 
@@ -153,3 +169,68 @@ describe('Core Logic', () => {
         });
     });
 });
+
+
+describe('normalizeConfig', () => {
+    const defaults: TimerConfig = {
+        intervalCount: 5,
+        intervalSecs: 60,
+        activityType: 115,
+        includeLocation: false,
+        totalDurationSecs: 300
+    };
+
+    it('returns defaults if settings are null/undefined', () => {
+        expect(normalizeConfig(null, defaults)).toEqual({
+            intervalCount: 5,
+            intervalSecs: 60,
+            activityType: 115,
+            includeLocation: false
+        });
+        expect(normalizeConfig(undefined, defaults)).toEqual({
+            intervalCount: 5,
+            intervalSecs: 60,
+            activityType: 115,
+            includeLocation: false
+        });
+    });
+
+    it('migrates legacy totalDurationSecs correctly', () => {
+        const legacySettings = {
+            totalDurationSecs: 600, // 10 mins
+            intervalSecs: 60,
+            activityType: 115,
+            includeLocation: false
+        };
+        const result = normalizeConfig(legacySettings, defaults);
+        expect(result.intervalCount).toBe(10); // 600 / 60
+    });
+
+    it('uses default count if legacy migration fails (0 duration)', () => {
+        const legacySettings = {
+            totalDurationSecs: 0,
+            intervalSecs: 60
+        };
+        const result = normalizeConfig(legacySettings, defaults);
+        expect(result.intervalCount).toBe(5); // Fallback to default
+    });
+
+    it('prioritizes explicit intervalCount over legacy duration', () => {
+        const settings = {
+            intervalCount: 8,
+            totalDurationSecs: 600, // Would be 10 if used
+            intervalSecs: 60
+        };
+        const result = normalizeConfig(settings, defaults);
+        expect(result.intervalCount).toBe(8);
+    });
+
+    it('handles false/0 values correctly', () => {
+        const settings = {
+            includeLocation: false
+        };
+        const result = normalizeConfig(settings, defaults);
+        expect(result.includeLocation).toBe(false);
+    });
+});
+

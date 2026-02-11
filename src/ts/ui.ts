@@ -3,6 +3,7 @@ import {
     formatTime,
     calculateTotalProgress,
     calculateIntervalProgress,
+    calculateDisplayTime,
     getCurrentRound,
     isFinished
 } from './logic.ts';
@@ -76,12 +77,15 @@ export class UIManager {
 
         // Interval Progress
         const intervalProgress = calculateIntervalProgress({ elapsed: totalElapsed, intervalDuration: config.intervalSecs });
-        const intervalDashOffset = this.INTERVAL_CIRCUMFERENCE * (1 - intervalProgress);
+
+        // Always Emptying: Start at 0 (Full) -> Go to C (Empty)
+        const intervalDashOffset = this.INTERVAL_CIRCUMFERENCE * intervalProgress;
+
         this.intervalRing.style.strokeDashoffset = intervalDashOffset.toString();
 
         // Timer Text
-        const currentIntervalSec = totalElapsed % config.intervalSecs;
-        const intervalTimerVal = Math.floor(currentIntervalSec);
+        const displayTime = calculateDisplayTime(totalElapsed, config.intervalSecs);
+        const intervalTimerVal = Math.floor(displayTime);
         this.timerDisplay.textContent = formatTime(intervalTimerVal);
 
         // Rounds
@@ -214,4 +218,3 @@ export class UIManager {
         this.showToast('Failed to sync to Google Fit', 'error', 4000);
     }
 }
-

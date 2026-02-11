@@ -1,9 +1,17 @@
 // Core logic functions (Universal: Browser + CJS)
 
-export interface TimerState {
+import { TimerConfig } from "./types.ts";
+
+export interface TimerLogicState {
     elapsed: number;
-    totalDuration?: number; // Optional because some functions only need elapsed
-    intervalDuration?: number; // Optional
+    totalDuration?: number;
+    intervalDuration?: number;
+}
+
+export function calculateDisplayTime(elapsed: number, interval: number): number {
+    const currentIntervalElapsed = elapsed % interval;
+    // Always countdown
+    return Math.max(0, interval - currentIntervalElapsed);
 }
 
 export function formatTime(seconds: number): string {
@@ -12,13 +20,13 @@ export function formatTime(seconds: number): string {
     return `${m}:${s}`;
 }
 
-export function calculateTotalProgress(state: Pick<TimerState, 'elapsed' | 'totalDuration'>): number {
+export function calculateTotalProgress(state: TimerLogicState): number {
     const { elapsed, totalDuration } = state;
     if (!totalDuration || totalDuration <= 0) return 1;
     return Math.min(elapsed / totalDuration, 1);
 }
 
-export function calculateIntervalProgress(state: Pick<TimerState, 'elapsed' | 'intervalDuration'>): number {
+export function calculateIntervalProgress(state: TimerLogicState): number {
     const { elapsed, intervalDuration } = state;
     if (!intervalDuration || intervalDuration <= 0) return 0;
     const currentIntervalSec: number = elapsed % intervalDuration;
@@ -30,7 +38,7 @@ export interface RoundInfo {
     total: number;
 }
 
-export function getCurrentRound(state: Required<TimerState>): RoundInfo {
+export function getCurrentRound(state: Required<TimerLogicState>): RoundInfo {
     const { elapsed, intervalDuration, totalDuration } = state;
     if (intervalDuration <= 0) return { current: 0, total: 0 };
     const totalRounds: number = Math.floor(totalDuration / intervalDuration);
@@ -45,8 +53,8 @@ export function isFinished(elapsed: number, totalDuration: number): boolean {
 }
 
 export type BeepCheck =
-    | { shouldBeep: true; freq: number; newBeepId: string }
-    | { shouldBeep: false };
+    | { shouldBeep: false }
+    | { shouldBeep: true; frequency: number; type: 'countdown' | 'complete'; newBeepId: string };
 
 export interface BeepContext {
     elapsed: number;
@@ -72,13 +80,14 @@ export function getCountdownBeep(context: BeepContext): BeepCheck {
         // but typically 0 elapsed means Duration remaining, so we are safe.
         // Needs a unique ID to prevent double triggers per second
         const currentRound: number = Math.floor(elapsed / intervalDuration);
-        const beepId: string = `${currentRound}-${secondsRemainingInt}`;
+        const beepId = `${currentRound}-${secondsRemainingInt}`;
 
         if (lastBeepId !== beepId) {
             const freq = getBeepFrequency(secondsRemainingInt);
-            return { shouldBeep: true, freq, newBeepId: beepId };
+            return { shouldBeep: true, frequency: freq, type: 'countdown', newBeepId: beepId };
         }
     }
+
     return { shouldBeep: false };
 }
 
@@ -117,4 +126,34 @@ export function calculateStreak(dates: Date[]): number {
     }
 
     return streak;
+}
+
+export function determineIntervalCount(settings: any, defaults: TimerConfig): number {
+    if (settings.intervalCount) {
+        return settings.intervalCount;
+    }
+    if ('totalDurationSecs' in settings) {
+        const legacy = settings as { totalDurationSecs: number };
+        const intervalSecs = settings.intervalSecs || defaults.intervalSecs;
+        return Math.floor(legacy.totalDurationSecs / intervalSecs) || 5;
+    }
+    return defaults.intervalCount;
+}
+
+export function normalizeConfig(settings: any, defaults: TimerConfig): Omit<TimerConfig, 'totalDurationSecs'> {
+    if (!settings) {
+        return {
+            intervalCount: defaults.intervalCount,
+            intervalSecs: defaults.intervalSecs,
+            activityType: defaults.activityType,
+            includeLocation: defaults.includeLocation
+        };
+    }
+
+    return {
+        intervalCount: determineIntervalCount(settings, defaults),
+        intervalSecs: settings.intervalSecs || defaults.intervalSecs,
+        activityType: settings.activityType || 115, // Default to Kettlebell if missing/zero
+        includeLocation: !!settings.includeLocation
+    };
 }
