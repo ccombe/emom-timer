@@ -3,6 +3,7 @@ import {
     formatTime,
     calculateTotalProgress,
     calculateIntervalProgress,
+    calculateDisplayTime,
     getCurrentRound,
     isFinished
 } from './logic.ts';
@@ -30,6 +31,8 @@ export class UIManager {
 
     private fitStatus: HTMLElement;
     private fitIcon: HTMLElement;
+    private toastContainer: HTMLElement;
+    private trophyContinueBtn: HTMLButtonElement;
 
     // SVG Constants
     private readonly TOTAL_CIRCUMFERENCE: number = 2 * Math.PI * 40;
@@ -60,6 +63,8 @@ export class UIManager {
         this.connectFitBtn = document.getElementById('connect-google-fit-btn') as HTMLButtonElement;
         this.fitStatus = document.getElementById('google-fit-status') as HTMLElement;
         this.fitIcon = document.getElementById('fit-status-icon') as HTMLElement;
+        this.toastContainer = document.getElementById('toast-container') as HTMLElement;
+        this.trophyContinueBtn = document.getElementById('trophy-continue-btn') as HTMLButtonElement;
     }
 
     public updateDisplay(state: TimerState, config: TimerConfig): void {
@@ -72,12 +77,15 @@ export class UIManager {
 
         // Interval Progress
         const intervalProgress = calculateIntervalProgress({ elapsed: totalElapsed, intervalDuration: config.intervalSecs });
-        const intervalDashOffset = this.INTERVAL_CIRCUMFERENCE * (1 - intervalProgress);
+
+        // Always Emptying: Start at 0 (Full) -> Go to C (Empty)
+        const intervalDashOffset = this.INTERVAL_CIRCUMFERENCE * intervalProgress;
+
         this.intervalRing.style.strokeDashoffset = intervalDashOffset.toString();
 
         // Timer Text
-        const currentIntervalSec = totalElapsed % config.intervalSecs;
-        const intervalTimerVal = Math.floor(currentIntervalSec);
+        const displayTime = calculateDisplayTime(totalElapsed, config.intervalSecs);
+        const intervalTimerVal = Math.floor(displayTime);
         this.timerDisplay.textContent = formatTime(intervalTimerVal);
 
         // Rounds
@@ -127,11 +135,17 @@ export class UIManager {
     public triggerVictoryVisuals(): void {
         document.body.classList.add('victory');
         this.trophyOverlay.classList.add('show');
+
+        // Show continue button after 2 seconds
+        setTimeout(() => {
+            this.trophyContinueBtn.style.display = 'block';
+        }, 2000);
     }
 
     public clearVisuals(): void {
         document.body.classList.remove('victory');
         this.trophyOverlay.classList.remove('show');
+        this.trophyContinueBtn.style.display = 'none';
     }
 
     public toggleSettings(visible: boolean): void {
@@ -166,13 +180,41 @@ export class UIManager {
         this.intervalDisplay.textContent = "Starting in " + count;
     }
 
-    public showToast(message: string): void {
-        const originalText = this.intervalDisplay.textContent;
-        this.intervalDisplay.textContent = message;
+    public showToast(message: string, type: 'success' | 'error' | 'info' = 'info', duration: number = 3000): void {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+
+        // Add icon based on type
+        const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+        toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+
+        this.toastContainer.appendChild(toast);
+
+        // Auto-dismiss after duration
         setTimeout(() => {
-            if (this.intervalDisplay.textContent === message) {
-                this.intervalDisplay.textContent = originalText;
-            }
-        }, 3000);
+            toast.classList.add('toast-hiding');
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    this.toastContainer.removeChild(toast);
+                }
+            }, 200); // Match fade-out animation duration
+        }, duration);
+    }
+
+    public showSyncConfirmation(): void {
+        this.showToast('Saved to Google Fit!', 'success', 3000);
+
+        // Brief pulse animation on fit icon
+        this.fitIcon.style.animation = 'none';
+        setTimeout(() => {
+            this.fitIcon.style.animation = 'pulse-blue 0.5s ease-out';
+            setTimeout(() => {
+                this.fitIcon.style.animation = '';
+            }, 500);
+        }, 10);
+    }
+
+    public showSyncError(): void {
+        this.showToast('Failed to sync to Google Fit', 'error', 4000);
     }
 }
