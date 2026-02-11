@@ -67,14 +67,47 @@ body.victory {
     transform: translate(-50%, -50%) scale(0);
     font-size: 20vmin;
     opacity: 0;
-    pointer-events: none;
+    /* pointer-events: none; Remove this so button is clickable */
     transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
 }
 
 #trophy-overlay.show {
     transform: translate(-50%, -50%) scale(1);
     opacity: 1;
+    pointer-events: auto;
+    /* Enable clicks */
+}
+
+.trophy-btn {
+    font-size: 1.5rem;
+    padding: 12px 30px;
+    background: var(--accent-color);
+    color: black;
+    border: none;
+    border-radius: 30px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    animation: fade-in-up 0.5s ease-out forwards;
+    opacity: 0;
+}
+
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* SVG Rings */

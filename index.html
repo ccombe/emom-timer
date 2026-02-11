@@ -17,6 +17,7 @@
 
     <button id="settings-toggle" title="Settings">☰</button>
     <div id="fit-status-icon" class="fit-icon" title="Google Fit Status"></div>
+    <div id="toast-container" class="toast-container"></div>
 
     <main>
         <div id="settings-panel">
@@ -90,7 +91,10 @@
                 </div>
             </div>
 
-            <div id="trophy-overlay">🏆</div>
+            <div id="trophy-overlay">
+                <div>🏆</div>
+                <button id="trophy-continue-btn" class="trophy-btn" style="display: none;">Continue</button>
+            </div>
         </div>
 
         <div class="controls" id="cntrls">

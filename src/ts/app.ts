@@ -53,11 +53,11 @@ document.addEventListener('google-fit-connected', () => {
 });
 document.addEventListener('google-fit-sync-success', () => {
     ui.updateFitUI('connected');
-    ui.showToast("Saved to Google Fit! ✅");
+    ui.showSyncConfirmation(); // Show toast with visual confirmation
 });
 document.addEventListener('google-fit-sync-error', () => {
     ui.updateFitUI('connected'); // Still connected, just failed sync
-    alert("Failed to sync workout to Google Fit.");
+    ui.showSyncError(); // Show error toast
 });
 
 // --- Actions ---
@@ -190,6 +190,15 @@ async function updateStreak() {
 // --- Event Binding ---
 ui.startBtn.addEventListener('click', toggleTimer);
 ui.resetBtn.addEventListener('click', resetTimer);
+
+// Post-trophy continue button
+const continueBtn = document.getElementById('trophy-continue-btn');
+if (continueBtn) {
+    continueBtn.addEventListener('click', () => {
+        resetTimer();
+        ui.clearVisuals();
+    });
+}
 
 ui.settingsToggle.addEventListener('click', () => {
     ui.toggleSettings(true); // Open
