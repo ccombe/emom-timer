@@ -229,8 +229,11 @@ function applySettings() {
         includeLocation: ui.locationToggle.checked
     };
 
+    // Capture old state before updating
+    const oldIncludeLocation = CONFIG.includeLocation;
+
     saveAndApplyConfig(newSettings);
-    handleLocationUpdate(newSettings.includeLocation);
+    handleLocationUpdate(newSettings.includeLocation, oldIncludeLocation);
     handleTimerUpdate(newSettings.intervalCount, newSettings.intervalSecs);
 }
 
@@ -241,8 +244,9 @@ function saveAndApplyConfig(settings: { intervalCount: number, intervalSecs: num
     CONFIG.includeLocation = settings.includeLocation;
 }
 
-function handleLocationUpdate(newIncludeLocation: boolean) {
-    const shouldAcquire = newIncludeLocation && !CONFIG.includeLocation && googleFit.isConnected();
+function handleLocationUpdate(newIncludeLocation: boolean, oldIncludeLocation: boolean) {
+    // Check if toggled ON
+    const shouldAcquire = newIncludeLocation && !oldIncludeLocation && googleFit.isConnected();
     if (shouldAcquire) {
         tryAcquireLocation();
     }
