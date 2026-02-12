@@ -22,11 +22,11 @@
   },
   "homepage": "https://github.com/ccombe/emom-timer#readme",
   "devDependencies": {
-    "@types/node": "^20.19.33",
+    "@types/node": "^25.2.3",
     "@vitest/coverage-v8": "^4.0.18",
     "fake-indexeddb": "^6.2.5",
     "idb": "^8.0.3",
-    "jsdom": "^27.4.0",
+    "jsdom": "^28.0.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"
