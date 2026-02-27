@@ -72,6 +72,10 @@ describe('Core Logic', () => {
         it('handles finished state', () => {
             expect(getCurrentRound({ elapsed: 300, intervalDuration: intervalSecs, totalDuration })).toEqual({ current: 5, total: 5 });
         });
+
+        it('handles very large elapsed time gracefully', () => {
+            expect(getCurrentRound({ elapsed: 1000, intervalDuration: intervalSecs, totalDuration })).toEqual({ current: 5, total: 5 });
+        });
     });
 
     describe('isFinished', () => {
@@ -115,6 +119,22 @@ describe('Core Logic', () => {
             const context = { elapsed: 56, intervalDuration: intervalSecs, lastBeepId: undefined };
             const result = getCountdownBeep(context);
             expect(result.shouldBeep).toBe(false);
+        });
+
+        it('should beep for different beep codes when lastBeepId is different', () => {
+            // Test 3 seconds remaining (57s)
+            const res1 = getCountdownBeep({ elapsed: 57, intervalDuration: 60, lastBeepId: '0-2' });
+            expect(res1.shouldBeep).toBe(true);
+            if (res1.shouldBeep) {
+                expect(res1.frequency).toBe(440);
+            }
+
+            // Test 2 seconds remaining (58s)
+            const res2 = getCountdownBeep({ elapsed: 58, intervalDuration: 60, lastBeepId: '0-3' });
+            expect(res2.shouldBeep).toBe(true);
+            if (res2.shouldBeep) {
+                expect(res2.frequency).toBe(554);
+            }
         });
     });
 
