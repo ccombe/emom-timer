@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GoogleFitService } from './google-fit.ts';
 
 // Mock Fetch
@@ -37,14 +37,20 @@ describe('GoogleFitService', () => {
         service.accessToken = 'mock-token'; // Simulate connected
     });
 
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
     describe('constructor and token expiry', () => {
         it('clears expired token on initialization', () => {
             localStorage.setItem('google_fit_token', 'old-token');
             localStorage.setItem('google_fit_token_expiry', (Date.now() - 1000).toString());
 
+            const logSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
             const newService = new GoogleFitService();
             expect(newService.accessToken).toBeNull();
             expect(localStorage.getItem('google_fit_token')).toBeNull();
+            logSpy.mockRestore();
         });
 
         it('retains valid token on initialization', () => {

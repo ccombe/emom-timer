@@ -1,12 +1,29 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { StorageService } from './storage.ts';
 import 'fake-indexeddb/auto';
 
 describe('StorageService', () => {
     let storage: StorageService;
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        // Clear IndexedDB to ensure test isolation
+        const DB_NAME = 'emom-timer-db';
+        const request = indexedDB.deleteDatabase(DB_NAME);
+        await new Promise((resolve, reject) => {
+            request.onsuccess = resolve;
+            request.onerror = reject;
+            request.onblocked = () => {
+                // If blocked, we might have a leak, but for tests we try to proceed
+                resolve(null);
+            };
+        });
         storage = new StorageService();
+    });
+
+    afterEach(async () => {
+        if (storage) {
+            await storage.close();
+        }
     });
 
     it('saves and retrieves session', async () => {
@@ -80,12 +97,7 @@ describe('StorageService', () => {
     });
 
     it('returns undefined for non-existent settings', async () => {
-        // Since we share the same DB in fake-indexeddb usually, 
-        // if we want to test empty we might need a new DB name or clear.
-        // For simplicity in this env, we just check if it returns what's there.
-        const storage2 = new StorageService();
-        const settings = await storage2.loadSettings();
-        // This might be defined if previous test ran, but we can at least hit the line.
-        expect(settings).toBeDefined(); // Based on previous test
+        const settings = await storage.loadSettings();
+        expect(settings).toBeUndefined();
     });
 });
