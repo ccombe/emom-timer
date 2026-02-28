@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/ccombe/emom-timer#readme",
   "devDependencies": {
-    "@types/node": "^24.10.15",
+    "@types/node": "^25.3.2",
     "@vitest/coverage-v8": "^4.0.18",
     "fake-indexeddb": "^6.2.5",
     "idb": "^8.0.3",
