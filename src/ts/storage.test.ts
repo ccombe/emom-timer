@@ -1,12 +1,28 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { StorageService } from './storage.ts';
-import 'fake-indexeddb/auto';
 
 describe('StorageService', () => {
     let storage: StorageService;
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        // Clear IndexedDB to ensure test isolation
+        const DB_NAME = 'emom-timer-db';
+        const request = indexedDB.deleteDatabase(DB_NAME);
+        await new Promise((resolve, reject) => {
+            request.onsuccess = resolve;
+            request.onerror = reject;
+            request.onblocked = () => {
+                // If blocked, surface the issue so leaked connections and isolation problems are visible
+                reject(new Error(`IndexedDB deleteDatabase("${DB_NAME}") was blocked; there may be open connections.`));
+            };
+        });
         storage = new StorageService();
+    });
+
+    afterEach(async () => {
+        if (storage) {
+            await storage.close();
+        }
     });
 
     it('saves and retrieves session', async () => {
@@ -63,5 +79,24 @@ describe('StorageService', () => {
 
         const streak = await storage.getStreak();
         expect(streak).toBe(2);
+    });
+
+    it('saves and loads settings', async () => {
+        const settings = {
+            intervalCount: 8,
+            intervalSecs: 45,
+            activityType: 114,
+            includeLocation: true,
+            setupComplete: true
+        };
+
+        await storage.saveSettings(settings);
+        const loaded = await storage.loadSettings();
+        expect(loaded).toEqual(settings);
+    });
+
+    it('returns undefined for non-existent settings', async () => {
+        const settings = await storage.loadSettings();
+        expect(settings).toBeUndefined();
     });
 });
