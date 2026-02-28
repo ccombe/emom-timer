@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { StorageService } from './storage.ts';
-import 'fake-indexeddb/auto';
 
 describe('StorageService', () => {
     let storage: StorageService;
