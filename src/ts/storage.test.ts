@@ -12,8 +12,8 @@ describe('StorageService', () => {
             request.onsuccess = resolve;
             request.onerror = reject;
             request.onblocked = () => {
-                // If blocked, we might have a leak, but for tests we try to proceed
-                resolve(null);
+                // If blocked, surface the issue so leaked connections and isolation problems are visible
+                reject(new Error(`IndexedDB deleteDatabase("${DB_NAME}") was blocked; there may be open connections.`));
             };
         });
         storage = new StorageService();
