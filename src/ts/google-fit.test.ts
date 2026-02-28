@@ -65,26 +65,45 @@ describe('GoogleFitService', () => {
 
     describe('initialize', () => {
         it('does nothing if window.google is missing', () => {
-            const originalGoogle = window.google;
-            delete (window as any).google;
-            service.initialize();
-            expect(service.tokenClient).toBeNull();
-            window.google = originalGoogle;
+            const hadGoogle = 'google' in window;
+            const originalGoogle = (window as any).google;
+            try {
+                delete (window as any).google;
+                service.initialize();
+                expect(service.tokenClient).toBeNull();
+            } finally {
+                if (hadGoogle) {
+                    (window as any).google = originalGoogle;
+                } else {
+                    delete (window as any).google;
+                }
+            }
         });
 
         it('initializes token client when window.google exists', () => {
+            const hadGoogle = 'google' in window;
+            const originalGoogle = (window as any).google;
             const mockInitTokenClient = vi.fn().mockReturnValue({ requestAccessToken: vi.fn() });
-            (window as any).google = {
-                accounts: {
-                    oauth2: {
-                        initTokenClient: mockInitTokenClient
-                    }
-                }
-            };
 
-            service.initialize();
-            expect(mockInitTokenClient).toHaveBeenCalled();
-            expect(service.tokenClient).toBeDefined();
+            try {
+                (window as any).google = {
+                    accounts: {
+                        oauth2: {
+                            initTokenClient: mockInitTokenClient
+                        }
+                    }
+                };
+
+                service.initialize();
+                expect(mockInitTokenClient).toHaveBeenCalled();
+                expect(service.tokenClient).toBeDefined();
+            } finally {
+                if (hadGoogle) {
+                    (window as any).google = originalGoogle;
+                } else {
+                    delete (window as any).google;
+                }
+            }
         });
     });
 
