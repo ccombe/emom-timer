@@ -75,4 +75,9 @@ export class StorageService {
         const dates = sessions.map(s => s.date);
         return calculateStreak(dates);
     }
+
+    async close(): Promise<void> {
+        const db = await this.dbPromise;
+        db.close();
+    }
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GoogleFitService } from './google-fit.ts';
 
 // Mock Fetch
@@ -30,8 +30,98 @@ describe('GoogleFitService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         localStorage.clear();
+        // Mock Date.now() for consistent testing
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2024-01-01T12:00:00Z'));
         service = new GoogleFitService();
         service.accessToken = 'mock-token'; // Simulate connected
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    describe('constructor and token expiry', () => {
+        it('clears expired token on initialization', () => {
+            localStorage.setItem('google_fit_token', 'old-token');
+            localStorage.setItem('google_fit_token_expiry', (Date.now() - 1000).toString());
+
+            const logSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+            const newService = new GoogleFitService();
+            expect(newService.accessToken).toBeNull();
+            expect(localStorage.getItem('google_fit_token')).toBeNull();
+            logSpy.mockRestore();
+        });
+
+        it('retains valid token on initialization', () => {
+            const future = Date.now() + 3600000;
+            localStorage.setItem('google_fit_token', 'valid-token');
+            localStorage.setItem('google_fit_token_expiry', future.toString());
+
+            const newService = new GoogleFitService();
+            expect(newService.accessToken).toBe('valid-token');
+        });
+    });
+
+    describe('initialize', () => {
+        it('does nothing if window.google is missing', () => {
+            const hadGoogle = 'google' in window;
+            const originalGoogle = (window as any).google;
+            try {
+                delete (window as any).google;
+                service.initialize();
+                expect(service.tokenClient).toBeNull();
+            } finally {
+                if (hadGoogle) {
+                    (window as any).google = originalGoogle;
+                } else {
+                    delete (window as any).google;
+                }
+            }
+        });
+
+        it('initializes token client when window.google exists', () => {
+            const hadGoogle = 'google' in window;
+            const originalGoogle = (window as any).google;
+            const mockInitTokenClient = vi.fn().mockReturnValue({ requestAccessToken: vi.fn() });
+
+            try {
+                (window as any).google = {
+                    accounts: {
+                        oauth2: {
+                            initTokenClient: mockInitTokenClient
+                        }
+                    }
+                };
+
+                service.initialize();
+                expect(mockInitTokenClient).toHaveBeenCalled();
+                expect(service.tokenClient).toBeDefined();
+            } finally {
+                if (hadGoogle) {
+                    (window as any).google = originalGoogle;
+                } else {
+                    delete (window as any).google;
+                }
+            }
+        });
+    });
+
+    describe('connect', () => {
+        it('calls requestAccessToken if client exists', () => {
+            const requestMock = vi.fn();
+            service.tokenClient = { requestAccessToken: requestMock };
+            service.connect();
+            expect(requestMock).toHaveBeenCalled();
+        });
+
+        it('logs error if client does not exist', () => {
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            service.tokenClient = null;
+            service.connect();
+            expect(spy).toHaveBeenCalledWith("Google Identity Services not initialized.");
+            spy.mockRestore();
+        });
     });
 
     describe('uploadSession', () => {
@@ -82,8 +172,14 @@ describe('GoogleFitService', () => {
                 json: async () => ({ error: "Bad request" })
             });
 
+            // Mock console.error to avoid noisy stderr in tests
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
             const result = await service.uploadSession({ duration: 60, interval: 60, activityType: 114 });
             expect(result).toBe(false);
+
+            expect(consoleSpy).toHaveBeenCalled();
+            consoleSpy.mockRestore();
         });
     });
 
@@ -116,6 +212,15 @@ describe('GoogleFitService', () => {
             (fetch as any).mockResolvedValueOnce({ ok: false });
             const dates = await service.fetchWorkoutHistory();
             expect(dates).toEqual([]);
+        });
+
+        it('handles fetch exceptions gracefully', async () => {
+            (fetch as any).mockRejectedValueOnce(new Error('Network failure'));
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            const dates = await service.fetchWorkoutHistory();
+            expect(dates).toEqual([]);
+            expect(spy).toHaveBeenCalled();
+            spy.mockRestore();
         });
 
         it('handles malformed/empty buckets gracefully', async () => {

@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "[**🏆 Live Demo &rarr;**](https://ccombe.github.io/emom-timer/)",
   "main": "src/js/app.js",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -22,13 +25,19 @@
   },
   "homepage": "https://github.com/ccombe/emom-timer#readme",
   "devDependencies": {
-    "@types/node": "^20.19.33",
+    "@types/node": "^25.3.2",
     "@vitest/coverage-v8": "^4.0.18",
     "fake-indexeddb": "^6.2.5",
     "idb": "^8.0.3",
-    "jsdom": "^27.4.0",
+    "jsdom": "^28.1.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"
+  },
+  "packageManager": "pnpm@10.30.3",
+  "pnpm": {
+    "overrides": {
+      "rollup@>=4.0.0 <4.59.0": ">=4.59.0"
+    }
   }
 }
