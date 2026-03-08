@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { StorageService } from './storage.ts';
 
 describe('StorageService', () => {
@@ -17,6 +17,7 @@ describe('StorageService', () => {
             };
         });
         storage = new StorageService();
+        await storage.init();
     });
 
     afterEach(async () => {
@@ -54,28 +55,18 @@ describe('StorageService', () => {
         // But StorageService assigns `new Date()` internally.
 
         // Mock Date
-        const originalDate = global.Date;
+        vi.useFakeTimers({ toFake: ['Date'] });
 
         // Day 1 (Yesterday)
-        const mockYesterday = new originalDate(yesterday);
-        global.Date = class extends originalDate {
-            constructor() { super(); return mockYesterday; }
-            static now() { return mockYesterday.getTime(); }
-        } as any;
-
+        vi.setSystemTime(yesterday);
         await storage.saveSession({ duration: 10, interval: 60, activityType: 115 });
 
         // Day 2 (Today)
-        const mockToday = new originalDate(today);
-        global.Date = class extends originalDate {
-            constructor() { super(); return mockToday; }
-            static now() { return mockToday.getTime(); }
-        } as any;
-
+        vi.setSystemTime(today);
         await storage.saveSession({ duration: 10, interval: 60, activityType: 115 });
 
         // Reset Date
-        global.Date = originalDate;
+        vi.useRealTimers();
 
         const streak = await storage.getStreak();
         expect(streak).toBe(2);

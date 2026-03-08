@@ -10,8 +10,8 @@ export interface TimerCallbacks {
 
 export class TimerEngine {
     public state: TimerState;
-    public config: TimerConfig; // Reference to config
-    private callbacks: TimerCallbacks;
+    public readonly config: TimerConfig; // Reference to config
+    private readonly callbacks: TimerCallbacks;
     private animationFrameId: number = 0;
     private lastIntervalIndex: number = -1;
 
@@ -71,20 +71,18 @@ export class TimerEngine {
     public toggle(): void {
         if (this.state.isRunning) {
             this.pause();
-        } else {
+        } else if (this.state.currentTotalElapsed >= this.config.totalDurationSecs) {
             // Logic for restart vs resume handled by caller? 
             // Or we just resume.
             // If finished, we should reset?
-            if (this.state.currentTotalElapsed >= this.config.totalDurationSecs) {
-                this.reset();
-                this.start(); // Caller might want countdown though.
-            } else {
-                this.start();
-            }
+            this.reset();
+            this.start(); // Caller might want countdown though.
+        } else {
+            this.start();
         }
     }
 
-    private tick = (): void => {
+    private readonly tick = (): void => {
         if (!this.state.isRunning) return;
 
         const now = Date.now();

@@ -125,17 +125,15 @@ function toggleTimer() {
     if (engine.state.isRunning) {
         engine.pause();
         ui.setStartBtnText("Resume");
+    } else if (engine.state.currentTotalElapsed >= CONFIG.totalDurationSecs) {
+        engine.reset();
+        startWithCountdown();
+    } else if (engine.state.currentTotalElapsed === 0) {
+        startWithCountdown();
     } else {
-        if (engine.state.currentTotalElapsed >= CONFIG.totalDurationSecs) {
-            engine.reset();
-            startWithCountdown();
-        } else if (engine.state.currentTotalElapsed === 0) {
-            startWithCountdown();
-        } else {
-            // Resume
-            ui.setStartBtnText("Pause");
-            engine.start();
-        }
+        // Resume
+        ui.setStartBtnText("Pause");
+        engine.start();
     }
 }
 
@@ -176,7 +174,7 @@ async function updateStreak() {
     if (googleFit.isConnected()) {
         try {
             const historyDates = await googleFit.fetchWorkoutHistory();
-            if (historyDates && historyDates.length > 0) {
+            if (historyDates?.length > 0) {
                 const dateObjects = historyDates.map(ts => new Date(ts));
                 const cloudStreak = calculateStreak(dateObjects);
                 displayStreak = Math.max(localStreak, cloudStreak);
@@ -202,7 +200,7 @@ if (continueBtn) {
 }
 
 ui.settingsToggle.addEventListener('click', () => {
-    ui.toggleSettings(true); // Open
+    ui.showSettings(); // Open
     audio.ensureAudioContext();
     if (googleFit.isConnected()) {
         ui.setFitConnectedState();
@@ -210,7 +208,7 @@ ui.settingsToggle.addEventListener('click', () => {
 });
 
 ui.closeSettingsBtn.addEventListener('click', () => {
-    ui.toggleSettings(false); console.log('Applying settings...');
+    ui.hideSettings(); console.log('Applying settings...');
     audio.ensureAudioContext();
     applySettings();
 });
@@ -295,10 +293,11 @@ async function loadSettings() {
 }
 
 async function init() {
+    await storage.init();
     const setupComplete = await loadSettings();
 
     if (!setupComplete) {
-        setTimeout(() => ui.toggleSettings(true), 500);
+        setTimeout(() => ui.showSettings(), 500);
     }
 
     ui.updateDisplay(engine.state, CONFIG);

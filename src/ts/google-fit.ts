@@ -47,13 +47,13 @@ export class GoogleFitService {
             client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
             scope: SCOPES,
             callback: (tokenResponse: GoogleTokenResponse) => {
-                if (tokenResponse && tokenResponse.access_token) {
+                if (tokenResponse?.access_token) {
                     this.accessToken = tokenResponse.access_token;
                     // Token is usually valid for 3600s (1 hr)
                     this.tokenExpiry = Date.now() + (tokenResponse.expires_in * 1000); // expires_in is seconds
 
                     // Persist
-                    localStorage.setItem('google_fit_token', this.accessToken!);
+                    localStorage.setItem('google_fit_token', this.accessToken);
                     localStorage.setItem('google_fit_token_expiry', this.tokenExpiry.toString());
 
                     // Dispatch custom event
@@ -206,12 +206,13 @@ export class GoogleFitService {
         // Activity types used by this app (from index.html activity-type-select)
         const validActivityTypes = [10, 15, 21, 97, 113, 114, 115];
         return points.some(p => {
-            return p.value && p.value.length > 0 && validActivityTypes.includes(p.value[0].intVal);
+            const intVal = p.value?.[0]?.intVal;
+            return intVal !== undefined && validActivityTypes.includes(intVal);
         });
     }
 
     private hasValidDataPoints(bucket: GoogleFitBucket): boolean {
-        return !!(bucket.dataset && bucket.dataset.length > 0 && bucket.dataset[0].point.length > 0);
+        return (bucket.dataset?.[0]?.point?.length ?? 0) > 0;
     }
 
     private processBuckets(buckets: GoogleFitBucket[]): number[] {

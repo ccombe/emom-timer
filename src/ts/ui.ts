@@ -21,18 +21,18 @@ export class UIManager {
     public readonly activityTypeSelect: HTMLSelectElement;
     public readonly locationToggle: HTMLInputElement;
 
-    private timerDisplay: HTMLElement;
-    private intervalDisplay: HTMLElement;
-    private streakDisplay: HTMLElement;
-    private totalRing: SVGCircleElement;
-    private intervalRing: SVGCircleElement;
-    private trophyOverlay: HTMLElement;
-    private settingsPanel: HTMLElement;
+    private readonly timerDisplay: HTMLElement;
+    private readonly intervalDisplay: HTMLElement;
+    private readonly streakDisplay: HTMLElement;
+    private readonly totalRing: SVGCircleElement;
+    private readonly intervalRing: SVGCircleElement;
+    private readonly trophyOverlay: HTMLElement;
+    private readonly settingsPanel: HTMLElement;
 
-    private fitStatus: HTMLElement;
-    private fitIcon: HTMLElement;
-    private toastContainer: HTMLElement;
-    private trophyContinueBtn: HTMLButtonElement;
+    private readonly fitStatus: HTMLElement;
+    private readonly fitIcon: HTMLElement;
+    private readonly toastContainer: HTMLElement;
+    private readonly trophyContinueBtn: HTMLButtonElement;
 
     // SVG Constants
     private readonly TOTAL_CIRCUMFERENCE: number = 2 * Math.PI * 40;
@@ -148,12 +148,12 @@ export class UIManager {
         this.trophyContinueBtn.style.display = 'none';
     }
 
-    public toggleSettings(visible: boolean): void {
-        if (visible) {
-            this.settingsPanel.classList.add('visible');
-        } else {
-            this.settingsPanel.classList.remove('visible');
-        }
+    public showSettings(): void {
+        this.settingsPanel.classList.add('visible');
+    }
+
+    public hideSettings(): void {
+        this.settingsPanel.classList.remove('visible');
     }
 
     public setSettingsInputs(config: TimerConfig): void {
@@ -185,7 +185,12 @@ export class UIManager {
         toast.className = `toast toast-${type}`;
 
         // Add icon based on type
-        const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+        let icon = 'ℹ️';
+        if (type === 'success') {
+            icon = '✅';
+        } else if (type === 'error') {
+            icon = '❌';
+        }
         toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
 
         this.toastContainer.appendChild(toast);

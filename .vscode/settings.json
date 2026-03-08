@@ -1,4 +1,8 @@
 {
     "snyk.advanced.organization": "88dc9dad-bcb3-429d-a4cd-017673443346",
-    "snyk.advanced.autoSelectOrganization": true
+    "snyk.advanced.autoSelectOrganization": true,
+    "sonarlint.connectedMode.project": {
+        "connectionId": "ccombe",
+        "projectKey": "ccombe_emom-timer"
+    }
 }
