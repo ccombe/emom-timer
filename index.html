@@ -7,7 +7,7 @@
     <meta name="description"
         content="Free EMOM (Every Minute On the Minute) interval timer for HIIT, CrossFit, and circuit training workouts. Sync with Google Fit and track your fitness streak.">
     <meta name="theme-color" content="#121212">
-    <title>EMOM Timer</title>
+    <title>Emon Timer</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="src/css/style.css">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -68,6 +68,13 @@
                 <div id="google-fit-status" style="font-size:0.8rem; margin-top:5px; color:#c0c0c0;">Not Connected</div>
             </div>
 
+            <div class="setting-group" style="margin-top: 20px; border-top: 1px solid #333; padding-top: 15px;">
+                <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.85rem;">
+                    <a href="privacy.html" style="color: #888; text-decoration: none;">Privacy Policy</a>
+                    <a href="terms.html" style="color: #888; text-decoration: none;">Terms of Service</a>
+                </div>
+            </div>
+
             <button id="close-settings-btn" style="width:100%; margin-top:10px;">Done</button>
         </div>
 
@@ -103,9 +110,15 @@
             <button id="start-btn" class="primary">Start</button>
             <button id="reset-btn">Reset</button>
         </div>
-
-
     </main>
+
+    <footer class="site-footer">
+        <span class="footer-branding">Emon Timer</span>
+        <span class="footer-divider">•</span>
+        <a href="privacy.html">Privacy Policy</a>
+        <span class="footer-divider">•</span>
+        <a href="terms.html">Terms of Service</a>
+    </footer>
 
     <script type="module" src="src/ts/app.ts"></script>
 </body>
