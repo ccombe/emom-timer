@@ -166,7 +166,7 @@ circle {
 
 .controls {
     position: absolute;
-    bottom: 5vmin;
+    bottom: 60px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -382,10 +382,45 @@ select {
         transform: translateY(0);
     }
 }
-
 @keyframes toast-fade-out {
     to {
         opacity: 0;
         transform: translateY(-10px);
     }
+}
+
+/* Footer */
+.site-footer {
+    position: fixed;
+    bottom: 10px;
+    width: 100%;
+    text-align: center;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+    z-index: 5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+}
+
+.site-footer a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.site-footer a:hover {
+    color: var(--accent-color);
+}
+
+.footer-branding {
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: white;
+}
+
+.footer-divider {
+    opacity: 0.4;
 }
