@@ -166,7 +166,7 @@ circle {
 
 .controls {
     position: absolute;
-    bottom: 60px;
+    bottom: calc(5vmin + 20px);
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -423,4 +423,36 @@ select {
 
 .footer-divider {
     opacity: 0.4;
+}
+
+/* Legal Pages */
+body.legal-page {
+    overflow: auto;
+    height: auto;
+    padding: 40px 20px;
+    display: block;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+body.legal-page h1 {
+    color: var(--accent-color);
+}
+
+body.legal-page h2 {
+    color: var(--accent-color);
+    margin-top: 30px;
+}
+
+body.legal-page p, 
+body.legal-page li {
+    line-height: 1.6;
+    color: #d0d0d0;
+}
+
+body.legal-page .back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    text-decoration: none;
+    color: var(--accent-color);
 }
