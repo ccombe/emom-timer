@@ -21,14 +21,13 @@ declare global {
 }
 
 export class GoogleFitService {
-    tokenClient: { requestAccessToken: () => void } | null;
+    tokenClient: { requestAccessToken: () => void } | null = null;
     accessToken: string | null;
     tokenExpiry: number;
 
     constructor() {
-        this.tokenClient = null;
         this.accessToken = localStorage.getItem('google_fit_token');
-        this.tokenExpiry = parseInt(localStorage.getItem('google_fit_token_expiry') || '0');
+        this.tokenExpiry = Number.parseInt(localStorage.getItem('google_fit_token_expiry') || '0');
 
         // Check if token is expired
         if (this.accessToken && Date.now() > this.tokenExpiry) {
@@ -41,9 +40,9 @@ export class GoogleFitService {
     }
 
     initialize(): void {
-        if (!window.google) return; // GIS library not loaded
+        if (!(globalThis as any).google) return; // GIS library not loaded
 
-        this.tokenClient = window.google.accounts.oauth2.initTokenClient({
+        this.tokenClient = (globalThis as any).google.accounts.oauth2.initTokenClient({
             client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
             scope: SCOPES,
             callback: (tokenResponse: GoogleTokenResponse) => {
@@ -204,10 +203,10 @@ export class GoogleFitService {
 
     private containsWorkout(points: { value: { intVal: number }[] }[]): boolean {
         // Activity types used by this app (from index.html activity-type-select)
-        const validActivityTypes = [10, 15, 21, 97, 113, 114, 115];
+        const validActivityTypes = new Set([10, 15, 21, 97, 113, 114, 115]);
         return points.some(p => {
             const intVal = p.value?.[0]?.intVal;
-            return intVal !== undefined && validActivityTypes.includes(intVal);
+            return intVal !== undefined && validActivityTypes.has(intVal);
         });
     }
 
@@ -221,7 +220,7 @@ export class GoogleFitService {
             if (this.hasValidDataPoints(bucket)) {
                 const points = bucket.dataset[0].point;
                 if (this.containsWorkout(points)) {
-                    activeDates.push(parseInt(bucket.startTimeMillis));
+                    activeDates.push(Number.parseInt(bucket.startTimeMillis));
                 }
             }
         });

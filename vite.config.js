@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
-import { resolve } from 'path';
-import fs from 'fs';
+import { resolve } from 'node:path';
+import fs from 'node:fs';
 
 // Dynamically find all HTML files in the root directory
 const htmlFiles = fs.readdirSync(__dirname)

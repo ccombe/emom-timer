@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GoogleFitService } from './google-fit.ts';
 
 // Mock Fetch
-global.fetch = vi.fn();
+globalThis.fetch = vi.fn();
 
 // Mock localStorage
 const localStorageMock = (function () {
@@ -22,7 +22,7 @@ const localStorageMock = (function () {
         }
     };
 })();
-Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock });
 
 describe('GoogleFitService', () => {
     let service: GoogleFitService;
@@ -64,29 +64,29 @@ describe('GoogleFitService', () => {
     });
 
     describe('initialize', () => {
-        it('does nothing if window.google is missing', () => {
-            const hadGoogle = 'google' in window;
-            const originalGoogle = (window as any).google;
+        it('does nothing if globalThis.google is missing', () => {
+            const hadGoogle = 'google' in globalThis;
+            const originalGoogle = (globalThis as any).google;
             try {
-                delete (window as any).google;
+                delete (globalThis as any).google;
                 service.initialize();
                 expect(service.tokenClient).toBeNull();
             } finally {
                 if (hadGoogle) {
-                    (window as any).google = originalGoogle;
+                    (globalThis as any).google = originalGoogle;
                 } else {
-                    delete (window as any).google;
+                    delete (globalThis as any).google;
                 }
             }
         });
 
-        it('initializes token client when window.google exists', () => {
-            const hadGoogle = 'google' in window;
-            const originalGoogle = (window as any).google;
+        it('initializes token client when globalThis.google exists', () => {
+            const hadGoogle = 'google' in globalThis;
+            const originalGoogle = (globalThis as any).google;
             const mockInitTokenClient = vi.fn().mockReturnValue({ requestAccessToken: vi.fn() });
 
             try {
-                (window as any).google = {
+                (globalThis as any).google = {
                     accounts: {
                         oauth2: {
                             initTokenClient: mockInitTokenClient
@@ -99,9 +99,9 @@ describe('GoogleFitService', () => {
                 expect(service.tokenClient).toBeDefined();
             } finally {
                 if (hadGoogle) {
-                    (window as any).google = originalGoogle;
+                    (globalThis as any).google = originalGoogle;
                 } else {
-                    delete (window as any).google;
+                    delete (globalThis as any).google;
                 }
             }
         });

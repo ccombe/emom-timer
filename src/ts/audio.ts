@@ -1,15 +1,13 @@
 export class AudioManager {
     private audioCtx: AudioContext | undefined;
 
-    constructor() {
-        // Lazy init
-    }
+
 
     // Audio Context Init (Lazy load on user interaction)
     public ensureAudioContext(): void {
         if (!this.audioCtx) {
             // Check for window.webkitAudioContext if needed, though modern browsers use AudioContext
-            const win = window as any;
+            const win = globalThis as any;
             const AudioContextConstructor = win.AudioContext || win.webkitAudioContext;
             if (AudioContextConstructor) {
                 this.audioCtx = new AudioContextConstructor();
