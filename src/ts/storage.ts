@@ -18,9 +18,9 @@ interface TimerDB extends DBSchema {
 }
 
 export class StorageService {
-    private dbPromise: Promise<IDBPDatabase<TimerDB>>;
+    private dbPromise!: Promise<IDBPDatabase<TimerDB>>;
 
-    constructor() {
+    public async init(): Promise<void> {
         this.dbPromise = openDB<TimerDB>(DB_NAME, DB_VERSION, {
             upgrade(db) {
                 // Store for workout sessions
@@ -34,6 +34,7 @@ export class StorageService {
                 }
             },
         });
+        await this.dbPromise;
     }
 
     async saveSession(session: WorkoutSession): Promise<WorkoutSession & { date: Date }> {
