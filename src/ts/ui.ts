@@ -200,7 +200,7 @@ export class UIManager {
             toast.classList.add('toast-hiding');
             setTimeout(() => {
                 if (toast.parentNode) {
-                    this.toastContainer.removeChild(toast);
+                    toast.remove();
                 }
             }, 200); // Match fade-out animation duration
         }, duration);

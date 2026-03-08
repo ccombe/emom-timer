@@ -7,3 +7,4 @@ coverage/
 
 # Snyk Security Extension - AI Rules (auto-generated)
 .agent/rules/snyk_rules.md
+.sonarlint/connectedMode.json

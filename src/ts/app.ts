@@ -221,9 +221,9 @@ ui.connectFitBtn.addEventListener('click', () => {
 
 function applySettings() {
     const newSettings = {
-        intervalCount: parseInt(ui.intervalCountInput.value) || 1,
-        intervalSecs: parseInt(ui.intervalDurationSelect.value),
-        activityType: parseInt(ui.activityTypeSelect.value) || 115,
+        intervalCount: Number.parseInt(ui.intervalCountInput.value) || 1,
+        intervalSecs: Number.parseInt(ui.intervalDurationSelect.value),
+        activityType: Number.parseInt(ui.activityTypeSelect.value) || 115,
         includeLocation: ui.locationToggle.checked
     };
 
@@ -292,20 +292,16 @@ async function loadSettings() {
     return false;
 }
 
-async function init() {
-    await storage.init();
-    const setupComplete = await loadSettings();
+await storage.init();
+const setupComplete = await loadSettings();
 
-    if (!setupComplete) {
-        setTimeout(() => ui.showSettings(), 500);
-    }
-
-    ui.updateDisplay(engine.state, CONFIG);
-    updateStreak();
-
-    if (googleFit.isConnected()) {
-        ui.updateFitUI('connected');
-    }
+if (!setupComplete) {
+    setTimeout(() => ui.showSettings(), 500);
 }
 
-init();
+ui.updateDisplay(engine.state, CONFIG);
+updateStreak();
+
+if (googleFit.isConnected()) {
+    ui.updateFitUI('connected');
+}
