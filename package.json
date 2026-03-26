@@ -25,14 +25,14 @@
   },
   "homepage": "https://github.com/ccombe/emom-timer#readme",
   "devDependencies": {
-    "@types/node": "^25.3.2",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@types/node": "^25.5.0",
+    "@vitest/coverage-v8": "^4.1.1",
     "fake-indexeddb": "^6.2.5",
     "idb": "^8.0.3",
-    "jsdom": "^28.1.0",
-    "typescript": "^5.9.3",
-    "vite": "^7.3.1",
-    "vitest": "^4.0.18"
+    "jsdom": "^29.0.1",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.2",
+    "vitest": "^4.1.1"
   },
   "packageManager": "pnpm@10.30.3",
   "pnpm": {
