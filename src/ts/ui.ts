@@ -1,225 +1,237 @@
-import { TimerConfig, TimerState } from './types.ts';
+import { TimerConfig, TimerState } from "./types.ts";
 import {
-    formatTime,
-    calculateTotalProgress,
-    calculateIntervalProgress,
-    calculateDisplayTime,
-    getCurrentRound,
-    isFinished
-} from './logic.ts';
+  formatTime,
+  calculateTotalProgress,
+  calculateIntervalProgress,
+  calculateDisplayTime,
+  getCurrentRound,
+  isFinished,
+} from "./logic.ts";
 
 export class UIManager {
-    // Buttons & Inputs
-    public readonly startBtn: HTMLButtonElement;
-    public readonly resetBtn: HTMLButtonElement;
-    public readonly settingsToggle: HTMLButtonElement;
-    public readonly closeSettingsBtn: HTMLButtonElement;
-    public readonly connectFitBtn: HTMLButtonElement;
+  // Buttons & Inputs
+  public readonly startBtn: HTMLButtonElement;
+  public readonly resetBtn: HTMLButtonElement;
+  public readonly settingsToggle: HTMLButtonElement;
+  public readonly closeSettingsBtn: HTMLButtonElement;
+  public readonly connectFitBtn: HTMLButtonElement;
 
-    public readonly intervalCountInput: HTMLInputElement;
-    public readonly intervalDurationSelect: HTMLSelectElement;
-    public readonly activityTypeSelect: HTMLSelectElement;
-    public readonly locationToggle: HTMLInputElement;
+  public readonly intervalCountInput: HTMLInputElement;
+  public readonly intervalDurationSelect: HTMLSelectElement;
+  public readonly activityTypeSelect: HTMLSelectElement;
+  public readonly locationToggle: HTMLInputElement;
 
-    private readonly timerDisplay: HTMLElement;
-    private readonly intervalDisplay: HTMLElement;
-    private readonly streakDisplay: HTMLElement;
-    private readonly totalRing: SVGCircleElement;
-    private readonly intervalRing: SVGCircleElement;
-    private readonly trophyOverlay: HTMLElement;
-    private readonly settingsPanel: HTMLElement;
+  private readonly timerDisplay: HTMLElement;
+  private readonly intervalDisplay: HTMLElement;
+  private readonly streakDisplay: HTMLElement;
+  private readonly totalRing: SVGCircleElement;
+  private readonly intervalRing: SVGCircleElement;
+  private readonly trophyOverlay: HTMLElement;
+  private readonly settingsPanel: HTMLElement;
 
-    private readonly fitStatus: HTMLElement;
-    private readonly fitIcon: HTMLElement;
-    private readonly toastContainer: HTMLElement;
-    private readonly trophyContinueBtn: HTMLButtonElement;
+  private readonly fitStatus: HTMLElement;
+  private readonly fitIcon: HTMLElement;
+  private readonly toastContainer: HTMLElement;
+  private readonly trophyContinueBtn: HTMLButtonElement;
 
-    // SVG Constants
-    private readonly TOTAL_CIRCUMFERENCE: number = 2 * Math.PI * 40;
-    private readonly INTERVAL_CIRCUMFERENCE: number = 2 * Math.PI * 70;
+  // SVG Constants
+  private readonly TOTAL_CIRCUMFERENCE: number = 2 * Math.PI * 40;
+  private readonly INTERVAL_CIRCUMFERENCE: number = 2 * Math.PI * 70;
 
-    constructor() {
-        this.timerDisplay = document.getElementById('timer-display') as HTMLElement;
-        this.intervalDisplay = document.getElementById('interval-display') as HTMLElement;
-        this.streakDisplay = document.getElementById('streak-display') as HTMLElement;
+  constructor() {
+    this.timerDisplay = document.getElementById("timer-display") as HTMLElement;
+    this.intervalDisplay = document.getElementById("interval-display") as HTMLElement;
+    this.streakDisplay = document.getElementById("streak-display") as HTMLElement;
 
-        this.totalRing = document.getElementById('total-ring-fg') as unknown as SVGCircleElement;
-        this.intervalRing = document.getElementById('interval-ring-fg') as unknown as SVGCircleElement;
+    this.totalRing = document.getElementById("total-ring-fg") as unknown as SVGCircleElement;
+    this.intervalRing = document.getElementById("interval-ring-fg") as unknown as SVGCircleElement;
 
-        this.startBtn = document.getElementById('start-btn') as HTMLButtonElement;
-        this.resetBtn = document.getElementById('reset-btn') as HTMLButtonElement;
-        this.trophyOverlay = document.getElementById('trophy-overlay') as HTMLElement;
+    this.startBtn = document.getElementById("start-btn") as HTMLButtonElement;
+    this.resetBtn = document.getElementById("reset-btn") as HTMLButtonElement;
+    this.trophyOverlay = document.getElementById("trophy-overlay") as HTMLElement;
 
-        // Settings
-        this.settingsToggle = document.getElementById('settings-toggle') as HTMLButtonElement;
-        this.settingsPanel = document.getElementById('settings-panel') as HTMLElement;
-        this.closeSettingsBtn = document.getElementById('close-settings-btn') as HTMLButtonElement;
+    // Settings
+    this.settingsToggle = document.getElementById("settings-toggle") as HTMLButtonElement;
+    this.settingsPanel = document.getElementById("settings-panel") as HTMLElement;
+    this.closeSettingsBtn = document.getElementById("close-settings-btn") as HTMLButtonElement;
 
-        this.intervalCountInput = document.getElementById('interval-count-input') as HTMLInputElement;
-        this.intervalDurationSelect = document.getElementById('interval-duration-select') as HTMLSelectElement;
-        this.activityTypeSelect = document.getElementById('activity-type-select') as HTMLSelectElement;
-        this.locationToggle = document.getElementById('location-toggle') as HTMLInputElement;
+    this.intervalCountInput = document.getElementById("interval-count-input") as HTMLInputElement;
+    this.intervalDurationSelect = document.getElementById(
+      "interval-duration-select",
+    ) as HTMLSelectElement;
+    this.activityTypeSelect = document.getElementById("activity-type-select") as HTMLSelectElement;
+    this.locationToggle = document.getElementById("location-toggle") as HTMLInputElement;
 
-        this.connectFitBtn = document.getElementById('connect-google-fit-btn') as HTMLButtonElement;
-        this.fitStatus = document.getElementById('google-fit-status') as HTMLElement;
-        this.fitIcon = document.getElementById('fit-status-icon') as HTMLElement;
-        this.toastContainer = document.getElementById('toast-container') as HTMLElement;
-        this.trophyContinueBtn = document.getElementById('trophy-continue-btn') as HTMLButtonElement;
+    this.connectFitBtn = document.getElementById("connect-google-fit-btn") as HTMLButtonElement;
+    this.fitStatus = document.getElementById("google-fit-status") as HTMLElement;
+    this.fitIcon = document.getElementById("fit-status-icon") as HTMLElement;
+    this.toastContainer = document.getElementById("toast-container") as HTMLElement;
+    this.trophyContinueBtn = document.getElementById("trophy-continue-btn") as HTMLButtonElement;
+  }
+
+  public updateDisplay(state: TimerState, config: TimerConfig): void {
+    const totalElapsed = state.currentTotalElapsed;
+
+    // Total Progress
+    const totalProgress = calculateTotalProgress({
+      elapsed: totalElapsed,
+      totalDuration: config.totalDurationSecs,
+    });
+    const totalDashOffset = this.TOTAL_CIRCUMFERENCE * (1 - totalProgress);
+    this.totalRing.style.strokeDashoffset = totalDashOffset.toString();
+
+    // Interval Progress
+    const intervalProgress = calculateIntervalProgress({
+      elapsed: totalElapsed,
+      intervalDuration: config.intervalSecs,
+    });
+
+    // Always Emptying: Start at 0 (Full) -> Go to C (Empty)
+    const intervalDashOffset = this.INTERVAL_CIRCUMFERENCE * intervalProgress;
+
+    this.intervalRing.style.strokeDashoffset = intervalDashOffset.toString();
+
+    // Timer Text
+    const displayTime = calculateDisplayTime(totalElapsed, config.intervalSecs);
+    const intervalTimerVal = Math.floor(displayTime);
+    this.timerDisplay.textContent = formatTime(intervalTimerVal);
+
+    // Rounds
+    const { current, total } = getCurrentRound({
+      elapsed: totalElapsed,
+      intervalDuration: config.intervalSecs,
+      totalDuration: config.totalDurationSecs,
+    });
+
+    if (isFinished(totalElapsed, config.totalDurationSecs)) {
+      this.intervalDisplay.textContent = "Done!";
+      this.timerDisplay.textContent = formatTime(0);
+      document.title = "Done! - EMOM Timer";
+    } else {
+      this.intervalDisplay.textContent = `Round ${current}/${total}`;
+      document.title = `${formatTime(intervalTimerVal)} - EMOM Timer`;
     }
+  }
 
-    public updateDisplay(state: TimerState, config: TimerConfig): void {
-        const totalElapsed = state.currentTotalElapsed;
+  public updateStreak(streak: number): void {
+    if (this.streakDisplay) {
+      this.streakDisplay.innerText = `Streak: ${streak} day${streak === 1 ? "" : "s"}`;
+    }
+  }
 
-        // Total Progress
-        const totalProgress = calculateTotalProgress({ elapsed: totalElapsed, totalDuration: config.totalDurationSecs });
-        const totalDashOffset = this.TOTAL_CIRCUMFERENCE * (1 - totalProgress);
-        this.totalRing.style.strokeDashoffset = totalDashOffset.toString();
+  public updateFitUI(status: "disconnected" | "connected" | "syncing"): void {
+    this.fitIcon.classList.remove("connected", "syncing");
 
-        // Interval Progress
-        const intervalProgress = calculateIntervalProgress({ elapsed: totalElapsed, intervalDuration: config.intervalSecs });
+    if (status === "connected") {
+      this.fitIcon.classList.add("connected");
+      this.fitIcon.title = "Google Fit: Connected";
+    } else if (status === "syncing") {
+      this.fitIcon.classList.add("connected", "syncing");
+      this.fitIcon.title = "Google Fit: Syncing...";
+    } else {
+      this.fitIcon.title = "Google Fit: Disconnected";
+    }
+  }
 
-        // Always Emptying: Start at 0 (Full) -> Go to C (Empty)
-        const intervalDashOffset = this.INTERVAL_CIRCUMFERENCE * intervalProgress;
+  public setFitConnectedState(): void {
+    this.fitStatus.textContent = "Connected";
+    this.fitStatus.style.color = "#4caf50";
+    this.connectFitBtn.style.display = "none";
+    this.updateFitUI("connected");
+  }
 
-        this.intervalRing.style.strokeDashoffset = intervalDashOffset.toString();
+  public triggerVictoryVisuals(): void {
+    document.body.classList.add("victory");
+    this.trophyOverlay.classList.add("show");
 
-        // Timer Text
-        const displayTime = calculateDisplayTime(totalElapsed, config.intervalSecs);
-        const intervalTimerVal = Math.floor(displayTime);
-        this.timerDisplay.textContent = formatTime(intervalTimerVal);
+    // Show continue button after 2 seconds
+    setTimeout(() => {
+      this.trophyContinueBtn.style.display = "block";
+    }, 2000);
+  }
 
-        // Rounds
-        const { current, total } = getCurrentRound({
-            elapsed: totalElapsed,
-            intervalDuration: config.intervalSecs,
-            totalDuration: config.totalDurationSecs
-        });
+  public clearVisuals(): void {
+    document.body.classList.remove("victory");
+    this.trophyOverlay.classList.remove("show");
+    this.trophyContinueBtn.style.display = "none";
+  }
 
-        if (isFinished(totalElapsed, config.totalDurationSecs)) {
-            this.intervalDisplay.textContent = "Done!";
-            this.timerDisplay.textContent = formatTime(0);
-            document.title = "Done! - EMOM Timer";
-        } else {
-            this.intervalDisplay.textContent = `Round ${current}/${total}`;
-            document.title = `${formatTime(intervalTimerVal)} - EMOM Timer`;
+  public showSettings(): void {
+    this.settingsPanel.classList.add("visible");
+  }
+
+  public hideSettings(): void {
+    this.settingsPanel.classList.remove("visible");
+  }
+
+  public setSettingsInputs(config: TimerConfig): void {
+    this.intervalCountInput.value = config.intervalCount.toString();
+    this.intervalDurationSelect.value = config.intervalSecs.toString();
+    if (this.activityTypeSelect) this.activityTypeSelect.value = config.activityType.toString();
+    if (this.locationToggle) this.locationToggle.checked = config.includeLocation;
+  }
+
+  public setStartBtnText(text: string): void {
+    this.startBtn.innerText = text;
+  }
+
+  public setStartBtnDisabled(disabled: boolean): void {
+    this.startBtn.disabled = disabled;
+  }
+
+  public setSettingsLocked(locked: boolean): void {
+    this.settingsToggle.style.pointerEvents = locked ? "none" : "all";
+  }
+
+  public showCountdown(count: number): void {
+    this.timerDisplay.textContent = "READY";
+    this.intervalDisplay.textContent = "Starting in " + count;
+  }
+
+  public showToast(
+    message: string,
+    type: "success" | "error" | "info" = "info",
+    duration: number = 3000,
+  ): void {
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+
+    // Add icon based on type
+    let icon = "ℹ️";
+    if (type === "success") {
+      icon = "✅";
+    } else if (type === "error") {
+      icon = "❌";
+    }
+    toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+
+    this.toastContainer.appendChild(toast);
+
+    // Auto-dismiss after duration
+    setTimeout(() => {
+      toast.classList.add("toast-hiding");
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.remove();
         }
-    }
+      }, 200); // Match fade-out animation duration
+    }, duration);
+  }
 
-    public updateStreak(streak: number): void {
-        if (this.streakDisplay) {
-            this.streakDisplay.innerText = `Streak: ${streak} day${streak === 1 ? '' : 's'}`;
-        }
-    }
+  public showSyncConfirmation(): void {
+    this.showToast("Saved to Google Fit!", "success", 3000);
 
-    public updateFitUI(status: 'disconnected' | 'connected' | 'syncing'): void {
-        this.fitIcon.classList.remove('connected', 'syncing');
+    // Brief pulse animation on fit icon
+    this.fitIcon.style.animation = "none";
+    setTimeout(() => {
+      this.fitIcon.style.animation = "pulse-blue 0.5s ease-out";
+      setTimeout(() => {
+        this.fitIcon.style.animation = "";
+      }, 500);
+    }, 10);
+  }
 
-        if (status === 'connected') {
-            this.fitIcon.classList.add('connected');
-            this.fitIcon.title = "Google Fit: Connected";
-        } else if (status === 'syncing') {
-            this.fitIcon.classList.add('connected', 'syncing');
-            this.fitIcon.title = "Google Fit: Syncing...";
-        } else {
-            this.fitIcon.title = "Google Fit: Disconnected";
-        }
-    }
-
-    public setFitConnectedState(): void {
-        this.fitStatus.textContent = "Connected";
-        this.fitStatus.style.color = "#4caf50";
-        this.connectFitBtn.style.display = 'none';
-        this.updateFitUI('connected');
-    }
-
-    public triggerVictoryVisuals(): void {
-        document.body.classList.add('victory');
-        this.trophyOverlay.classList.add('show');
-
-        // Show continue button after 2 seconds
-        setTimeout(() => {
-            this.trophyContinueBtn.style.display = 'block';
-        }, 2000);
-    }
-
-    public clearVisuals(): void {
-        document.body.classList.remove('victory');
-        this.trophyOverlay.classList.remove('show');
-        this.trophyContinueBtn.style.display = 'none';
-    }
-
-    public showSettings(): void {
-        this.settingsPanel.classList.add('visible');
-    }
-
-    public hideSettings(): void {
-        this.settingsPanel.classList.remove('visible');
-    }
-
-    public setSettingsInputs(config: TimerConfig): void {
-        this.intervalCountInput.value = config.intervalCount.toString();
-        this.intervalDurationSelect.value = config.intervalSecs.toString();
-        if (this.activityTypeSelect) this.activityTypeSelect.value = config.activityType.toString();
-        if (this.locationToggle) this.locationToggle.checked = config.includeLocation;
-    }
-
-    public setStartBtnText(text: string): void {
-        this.startBtn.innerText = text;
-    }
-
-    public setStartBtnDisabled(disabled: boolean): void {
-        this.startBtn.disabled = disabled;
-    }
-
-    public setSettingsLocked(locked: boolean): void {
-        this.settingsToggle.style.pointerEvents = locked ? 'none' : 'all';
-    }
-
-    public showCountdown(count: number): void {
-        this.timerDisplay.textContent = "READY";
-        this.intervalDisplay.textContent = "Starting in " + count;
-    }
-
-    public showToast(message: string, type: 'success' | 'error' | 'info' = 'info', duration: number = 3000): void {
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-
-        // Add icon based on type
-        let icon = 'ℹ️';
-        if (type === 'success') {
-            icon = '✅';
-        } else if (type === 'error') {
-            icon = '❌';
-        }
-        toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
-
-        this.toastContainer.appendChild(toast);
-
-        // Auto-dismiss after duration
-        setTimeout(() => {
-            toast.classList.add('toast-hiding');
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.remove();
-                }
-            }, 200); // Match fade-out animation duration
-        }, duration);
-    }
-
-    public showSyncConfirmation(): void {
-        this.showToast('Saved to Google Fit!', 'success', 3000);
-
-        // Brief pulse animation on fit icon
-        this.fitIcon.style.animation = 'none';
-        setTimeout(() => {
-            this.fitIcon.style.animation = 'pulse-blue 0.5s ease-out';
-            setTimeout(() => {
-                this.fitIcon.style.animation = '';
-            }, 500);
-        }, 10);
-    }
-
-    public showSyncError(): void {
-        this.showToast('Failed to sync to Google Fit', 'error', 4000);
-    }
+  public showSyncError(): void {
+    this.showToast("Failed to sync to Google Fit", "error", 4000);
+  }
 }

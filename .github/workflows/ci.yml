@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
@@ -18,40 +18,40 @@ jobs:
     permissions:
       contents: read
     steps:
-    - uses: actions/checkout@v6
-    
-    - name: Use Node.js
-      uses: actions/setup-node@v6
-      with:
-        node-version: '24'
+      - uses: actions/checkout@v6
 
-    - name: Enable Corepack
-      run: corepack enable
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
 
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Enable Corepack
+        run: corepack enable
 
-    - name: Run tests with coverage
-      run: pnpm coverage
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
-    - name: Upload coverage report
-      uses: actions/upload-artifact@v7
-      with:
-        name: coverage-report
-        path: coverage/
-    
-    - name: Build for production
-      run: pnpm build
-      env:
-        VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
-      
-    - name: Setup Pages
-      uses: actions/configure-pages@v5
-      
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v4
-      with:
-        path: './dist'
+      - name: Run tests with coverage
+        run: pnpm coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: coverage/
+
+      - name: Build for production
+        run: pnpm build
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: "./dist"
 
   deploy:
     environment:
