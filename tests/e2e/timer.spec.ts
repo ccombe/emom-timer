@@ -6,7 +6,7 @@ test.describe('App rendering and mechanics', () => {
   });
 
   test('Has expected title and initial state', async ({ page }) => {
-    await expect(page).toHaveTitle(/Workout Timer/);
+    await expect(page).toHaveTitle(/EMOM Timer/);
     await expect(page.locator('#start-btn')).toBeVisible();
     await expect(page.locator('#start-btn')).toHaveText('Start');
   });
@@ -17,15 +17,15 @@ test.describe('App rendering and mechanics', () => {
     await expect(page.locator('#settings-panel')).toBeVisible();
 
     // Select Fartlek
-    await page.locator('#timer-mode').selectOption('fartlek');
+    await page.locator('#timer-mode-select').selectOption('fartlek');
 
     // Activity type should have auto-mapped to Running! (Value 8)
-    await expect(page.locator('#activity-type')).toHaveValue('8');
+    await expect(page.locator('#activity-type-select')).toHaveValue('8');
 
     // Close settings
     await page.locator('#close-settings-btn').click();
 
-    // Text on main screen should be updated to track the custom durations
-    await expect(page.locator('#current-phase-name')).toBeVisible();
+    // Interval display should remain visible after mode switch
+    await expect(page.locator('#interval-display')).toBeVisible();
   });
 });

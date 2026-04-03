@@ -252,7 +252,7 @@ function getDefaultFartlekPhases() {
 function applySettings() {
   const modeVal = ui.timerModeSelect ? (ui.timerModeSelect.value as TimerMode) : "emom";
   const customPhases = CONFIG.phases?.length ? CONFIG.phases : getDefaultFartlekPhases();
-  
+
   const newSettings = {
     mode: modeVal,
     phases: modeVal === "fartlek" ? customPhases : undefined,
@@ -263,9 +263,10 @@ function applySettings() {
   };
 
   const oldIncludeLocation = CONFIG.includeLocation;
+  const oldMode = CONFIG.mode; // Capture BEFORE saveAndApplyConfig mutates it
   saveAndApplyConfig(newSettings);
   handleLocationUpdate(newSettings.includeLocation, oldIncludeLocation);
-  handleTimerUpdate(newSettings.intervalCount, newSettings.intervalSecs, newSettings.mode);
+  handleTimerUpdate(newSettings.intervalCount, newSettings.intervalSecs, newSettings.mode, oldMode);
 }
 
 function saveAndApplyConfig(settings: {
@@ -292,9 +293,9 @@ function handleLocationUpdate(newIncludeLocation: boolean, oldIncludeLocation: b
   }
 }
 
-function handleTimerUpdate(newIntervalCount: number, newIntervalSecs: number, newMode: TimerMode) {
+function handleTimerUpdate(newIntervalCount: number, newIntervalSecs: number, newMode: TimerMode, oldMode: TimerMode) {
   const timerParamsChanged =
-    newIntervalCount !== CONFIG.intervalCount || newIntervalSecs !== CONFIG.intervalSecs || newMode !== CONFIG.mode;
+    newIntervalCount !== CONFIG.intervalCount || newIntervalSecs !== CONFIG.intervalSecs || newMode !== oldMode;
 
   if (timerParamsChanged) {
     CONFIG.intervalCount = newIntervalCount;

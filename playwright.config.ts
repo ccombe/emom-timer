@@ -21,6 +21,6 @@ export default defineConfig({
     command: 'pnpm run dev',
     url: 'http://localhost:3000/emom-timer/',
     reuseExistingServer: !process.env.CI,
-    timeout: 10000,
+    timeout: process.env.CI ? 60000 : 10000,
   },
 });

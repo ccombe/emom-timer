@@ -44,7 +44,7 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        enabled: true
+        enabled: !process.env.CI
       }
     }),
   ],
