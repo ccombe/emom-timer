@@ -2,8 +2,9 @@
 import { calculateStreak, normalizeConfig } from "./logic.ts";
 import { StorageService } from "./storage.ts";
 import { googleFit } from "./google-fit.ts";
-import { TimerConfig, TimerState } from "./types.ts";
+import { TimerConfig, TimerState, TimerMode } from "./types.ts";
 import { AudioManager } from "./audio.ts";
+import { MediaSessionAdapter } from "./adapters.ts";
 import { UIManager } from "./ui.ts";
 import { TimerEngine, TimerCallbacks } from "./timer-engine.ts";
 
@@ -11,14 +12,19 @@ import { TimerEngine, TimerCallbacks } from "./timer-engine.ts";
 const storage = new StorageService();
 const audio = new AudioManager();
 const ui = new UIManager();
+const mediaSession = new MediaSessionAdapter();
 
 // --- Configuration ---
 let CONFIG: TimerConfig = {
-  intervalCount: 5, // Default 5 rounds
-  intervalSecs: 60, // 1 minute
-  activityType: 115, // Default Kettlebell
-  includeLocation: false, // Default Off
+  mode: "emom",
+  intervalCount: 5,
+  intervalSecs: 60,
+  activityType: 115,
+  includeLocation: false,
   get totalDurationSecs() {
+    if (this.mode === "fartlek" && this.phases) {
+      return this.phases.reduce((acc, phase) => acc + phase.durationSecs, 0);
+    }
     return this.intervalCount * this.intervalSecs;
   },
 };
@@ -28,13 +34,18 @@ const callbacks: TimerCallbacks = {
   onTick: (state: TimerState) => {
     ui.updateDisplay(state, CONFIG);
   },
-  onIntervalStart: (_index: number) => {
-    audio.playBell();
+  onIntervalStart: (_index: number, phaseName?: string) => {
+    if (CONFIG.mode === "fartlek" && phaseName) {
+      audio.announcePhase(phaseName);
+    } else {
+      audio.playBell();
+    }
   },
   onCountdownBeep: (freq: number) => {
     audio.playCountdownBeep(freq);
   },
   onComplete: () => {
+    audio.releaseLockScreenAudio();
     audio.playEndSound();
     ui.triggerVictoryVisuals();
     saveWorkout();
@@ -114,6 +125,7 @@ function startWithCountdown() {
     ui.setStartBtnDisabled(false);
     ui.setSettingsLocked(false);
     ui.setStartBtnText("Pause");
+    audio.maintainLockScreenAudio();
     engine.start();
   });
 }
@@ -136,6 +148,7 @@ function toggleTimer() {
 
 function resetTimer() {
   engine.reset();
+  audio.releaseLockScreenAudio();
   ui.setStartBtnText("Start");
   ui.clearVisuals();
   ui.updateDisplay(engine.state, CONFIG);
@@ -218,22 +231,35 @@ ui.connectFitBtn.addEventListener("click", () => {
 });
 
 function applySettings() {
+  const modeVal = ui.timerModeSelect ? (ui.timerModeSelect.value as TimerMode) : "emom";
+  let defaultPhases = undefined;
+  if (modeVal === "fartlek" && (!CONFIG.phases || CONFIG.phases.length === 0)) {
+    defaultPhases = [
+      { name: "Walk", durationSecs: 60 },
+      { name: "Jog", durationSecs: 120 },
+      { name: "Walk", durationSecs: 60 },
+      { name: "Run", durationSecs: 30 }
+    ];
+  }
+
   const newSettings = {
+    mode: modeVal,
+    phases: modeVal === "fartlek" ? (CONFIG.phases || defaultPhases) : undefined,
     intervalCount: Number.parseInt(ui.intervalCountInput.value) || 1,
     intervalSecs: Number.parseInt(ui.intervalDurationSelect.value),
     activityType: Number.parseInt(ui.activityTypeSelect.value) || 115,
     includeLocation: ui.locationToggle.checked,
   };
 
-  // Capture old state before updating
   const oldIncludeLocation = CONFIG.includeLocation;
-
   saveAndApplyConfig(newSettings);
   handleLocationUpdate(newSettings.includeLocation, oldIncludeLocation);
-  handleTimerUpdate(newSettings.intervalCount, newSettings.intervalSecs);
+  handleTimerUpdate(newSettings.intervalCount, newSettings.intervalSecs, newSettings.mode);
 }
 
 function saveAndApplyConfig(settings: {
+  mode: TimerMode;
+  phases?: any[];
   intervalCount: number;
   intervalSecs: number;
   activityType: number;
@@ -241,6 +267,8 @@ function saveAndApplyConfig(settings: {
 }) {
   storage.saveSettings({ ...settings, setupComplete: true });
 
+  CONFIG.mode = settings.mode;
+  if (settings.phases) CONFIG.phases = settings.phases;
   CONFIG.activityType = settings.activityType;
   CONFIG.includeLocation = settings.includeLocation;
 }
@@ -253,9 +281,9 @@ function handleLocationUpdate(newIncludeLocation: boolean, oldIncludeLocation: b
   }
 }
 
-function handleTimerUpdate(newIntervalCount: number, newIntervalSecs: number) {
+function handleTimerUpdate(newIntervalCount: number, newIntervalSecs: number, newMode: TimerMode) {
   const timerParamsChanged =
-    newIntervalCount !== CONFIG.intervalCount || newIntervalSecs !== CONFIG.intervalSecs;
+    newIntervalCount !== CONFIG.intervalCount || newIntervalSecs !== CONFIG.intervalSecs || newMode !== CONFIG.mode;
 
   if (timerParamsChanged) {
     CONFIG.intervalCount = newIntervalCount;
@@ -274,6 +302,12 @@ function handleTimerUpdate(newIntervalCount: number, newIntervalSecs: number) {
 }
 
 // --- Init ---
+mediaSession.configure({
+  title: "Workout Timer",
+  artist: "EMOM Timer",
+  onPlay: toggleTimer,
+  onPause: toggleTimer,
+});
 
 async function loadSettings() {
   const settings = await storage.loadSettings();
@@ -303,7 +337,7 @@ if (!setupComplete) {
 }
 
 ui.updateDisplay(engine.state, CONFIG);
-updateStreak();
+await updateStreak();
 
 if (googleFit.isConnected()) {
   ui.updateFitUI("connected");

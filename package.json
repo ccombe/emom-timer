@@ -33,6 +33,7 @@
     "oxlint": "latest",
     "typescript": "^6.0.2",
     "vite": "latest",
+    "vite-plugin-pwa": "^1.2.0",
     "vitest": "latest"
   },
   "engines": {

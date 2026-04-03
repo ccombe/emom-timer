@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 import { resolve } from "node:path";
 import fs from "node:fs";
 
@@ -23,6 +24,27 @@ export default defineConfig({
       input: htmlFiles,
     },
   },
+  plugins: [
+    VitePWA({
+      registerType: "autoUpdate",
+      injectRegister: "auto",
+      manifest: {
+        name: "EMOM Timer",
+        short_name: "EMOM",
+        description: "Timer for EMOM, Tabata, and Walk/Jog/Run workflows.",
+        theme_color: "#121212",
+        background_color: "#121212",
+        display: "standalone",
+        icons: [
+          {
+            src: "favicon.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+        ],
+      },
+    }),
+  ],
   server: {
     port: 3000,
     open: true,

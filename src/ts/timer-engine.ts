@@ -3,7 +3,7 @@ import { isFinished, getCountdownBeep, BeepCheck } from "./logic.ts";
 
 export interface TimerCallbacks {
   onTick: (state: TimerState) => void;
-  onIntervalStart: (intervalIndex: number) => void;
+  onIntervalStart: (intervalIndex: number, phaseName?: string) => void;
   onCountdownBeep: (freq: number) => void;
   onComplete: () => void;
 }
@@ -91,20 +91,61 @@ export class TimerEngine {
     const rawElapsed = (now - this.state.startTime) / 1000;
     this.state.currentTotalElapsed = rawElapsed;
 
-    this.handleCountdownLogic();
+    const phaseInfo = this.getCurrentPhaseInfo();
+    this.state.currentPhaseIndex = phaseInfo.index;
+    this.state.currentPhaseDuration = phaseInfo.duration;
+    this.state.currentPhaseElapsed = phaseInfo.elapsedInPhase;
+    this.state.currentPhaseName = phaseInfo.name;
+
+    this.handleCountdownLogic(phaseInfo);
 
     if (this.checkCompletion()) return;
 
-    this.checkIntervalTransition();
+    this.checkIntervalTransition(phaseInfo);
 
     this.callbacks.onTick(this.state);
     this.animationFrameId = requestAnimationFrame(this.tick);
   };
 
-  private handleCountdownLogic(): void {
+  private getCurrentPhaseInfo() {
+    if (this.config.mode === "fartlek" && this.config.phases && this.config.phases.length > 0) {
+      let accum = 0;
+      for (let i = 0; i < this.config.phases.length; i++) {
+        const pDuration = this.config.phases[i].durationSecs;
+        if (this.state.currentTotalElapsed < accum + pDuration) {
+          return {
+            index: i,
+            duration: pDuration,
+            elapsedInPhase: this.state.currentTotalElapsed - accum,
+            name: this.config.phases[i].name,
+          };
+        }
+        accum += pDuration;
+      }
+      // If went over the end, return last phase stats
+      const lastIdx = this.config.phases.length - 1;
+      const lastPhase = this.config.phases[lastIdx];
+      return {
+        index: lastIdx,
+        duration: lastPhase.durationSecs,
+        elapsedInPhase: this.state.currentTotalElapsed - (accum - lastPhase.durationSecs),
+        name: lastPhase.name,
+      };
+    }
+
+    const index = Math.floor(this.state.currentTotalElapsed / this.config.intervalSecs);
+    return {
+      index,
+      duration: this.config.intervalSecs,
+      elapsedInPhase: this.state.currentTotalElapsed % this.config.intervalSecs,
+      name: `Round ${index + 1}`,
+    };
+  }
+
+  private handleCountdownLogic(phaseInfo: { elapsedInPhase: number; duration: number }): void {
     const beepCheck: BeepCheck = getCountdownBeep({
-      elapsed: this.state.currentTotalElapsed,
-      intervalDuration: this.config.intervalSecs,
+      elapsed: phaseInfo.elapsedInPhase,
+      intervalDuration: phaseInfo.duration,
       lastBeepId: this.state.lastBeepSecond,
     });
 
@@ -125,13 +166,10 @@ export class TimerEngine {
     return false;
   }
 
-  private checkIntervalTransition(): void {
-    const currentIntervalIndex = Math.floor(
-      this.state.currentTotalElapsed / this.config.intervalSecs,
-    );
-    if (currentIntervalIndex > this.lastIntervalIndex && currentIntervalIndex > 0) {
-      this.callbacks.onIntervalStart(currentIntervalIndex);
-      this.lastIntervalIndex = currentIntervalIndex;
+  private checkIntervalTransition(phaseInfo: { index: number; name: string }): void {
+    if (phaseInfo.index > this.lastIntervalIndex && phaseInfo.index > 0) {
+      this.callbacks.onIntervalStart(phaseInfo.index, phaseInfo.name);
+      this.lastIntervalIndex = phaseInfo.index;
     }
   }
 

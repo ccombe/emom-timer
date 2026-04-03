@@ -2,8 +2,6 @@ import { TimerConfig, TimerState } from "./types.ts";
 import {
   formatTime,
   calculateTotalProgress,
-  calculateIntervalProgress,
-  calculateDisplayTime,
   getCurrentRound,
   isFinished,
 } from "./logic.ts";
@@ -16,6 +14,7 @@ export class UIManager {
   public readonly closeSettingsBtn: HTMLButtonElement;
   public readonly connectFitBtn: HTMLButtonElement;
 
+  public readonly timerModeSelect: HTMLSelectElement;
   public readonly intervalCountInput: HTMLInputElement;
   public readonly intervalDurationSelect: HTMLSelectElement;
   public readonly activityTypeSelect: HTMLSelectElement;
@@ -55,6 +54,7 @@ export class UIManager {
     this.settingsPanel = document.getElementById("settings-panel") as HTMLElement;
     this.closeSettingsBtn = document.getElementById("close-settings-btn") as HTMLButtonElement;
 
+    this.timerModeSelect = document.getElementById("timer-mode-select") as HTMLSelectElement;
     this.intervalCountInput = document.getElementById("interval-count-input") as HTMLInputElement;
     this.intervalDurationSelect = document.getElementById(
       "interval-duration-select",
@@ -81,34 +81,35 @@ export class UIManager {
     this.totalRing.style.strokeDashoffset = totalDashOffset.toString();
 
     // Interval Progress
-    const intervalProgress = calculateIntervalProgress({
-      elapsed: totalElapsed,
-      intervalDuration: config.intervalSecs,
-    });
-
+    const currentPhaseElapsed = state.currentPhaseElapsed ?? (totalElapsed % config.intervalSecs);
+    const currentPhaseDuration = state.currentPhaseDuration ?? config.intervalSecs;
+    
     // Always Emptying: Start at 0 (Full) -> Go to C (Empty)
+    const intervalProgress = currentPhaseElapsed / currentPhaseDuration;
     const intervalDashOffset = this.INTERVAL_CIRCUMFERENCE * intervalProgress;
 
     this.intervalRing.style.strokeDashoffset = intervalDashOffset.toString();
 
     // Timer Text
-    const displayTime = calculateDisplayTime(totalElapsed, config.intervalSecs);
-    const intervalTimerVal = Math.floor(displayTime);
+    const intervalTimerVal = Math.floor(currentPhaseDuration - currentPhaseElapsed);
     this.timerDisplay.textContent = formatTime(intervalTimerVal);
-
-    // Rounds
-    const { current, total } = getCurrentRound({
-      elapsed: totalElapsed,
-      intervalDuration: config.intervalSecs,
-      totalDuration: config.totalDurationSecs,
-    });
 
     if (isFinished(totalElapsed, config.totalDurationSecs)) {
       this.intervalDisplay.textContent = "Done!";
       this.timerDisplay.textContent = formatTime(0);
       document.title = "Done! - EMOM Timer";
     } else {
-      this.intervalDisplay.textContent = `Round ${current}/${total}`;
+      if (state.currentPhaseName) {
+        this.intervalDisplay.textContent = state.currentPhaseName;
+      } else {
+        // Fallback for EMOM generic rounds
+        const { current, total } = getCurrentRound({
+          elapsed: totalElapsed,
+          intervalDuration: config.intervalSecs,
+          totalDuration: config.totalDurationSecs,
+        });
+        this.intervalDisplay.textContent = `Round ${current}/${total}`;
+      }
       document.title = `${formatTime(intervalTimerVal)} - EMOM Timer`;
     }
   }
@@ -165,6 +166,7 @@ export class UIManager {
   }
 
   public setSettingsInputs(config: TimerConfig): void {
+    if (this.timerModeSelect) this.timerModeSelect.value = config.mode || "emom";
     this.intervalCountInput.value = config.intervalCount.toString();
     this.intervalDurationSelect.value = config.intervalSecs.toString();
     if (this.activityTypeSelect) this.activityTypeSelect.value = config.activityType.toString();
