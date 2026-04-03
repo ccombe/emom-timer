@@ -122,28 +122,27 @@ describe("TimerEngine Core Coverage", () => {
       const engine = new TimerEngine(defaultConfig, callbacks);
       engine.start();
       
-      // Artificially hard-mocking the date delta and running tick natively
-      const originalNow = Date.now;
-      Date.now = vi.fn(() => engine.state.startTime + 57100); // 57.1 seconds elapsed
-      
-      vi.advanceTimersByTime(16); // push one native frame
-      
-      expect(callbacks.onCountdownBeep).toHaveBeenCalled(); // Trigger beep on 3 boundary
-      
-      Date.now = originalNow;
+      // Use vi.spyOn so Date.now is restored even if assertions throw
+      const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(engine.state.startTime + 57100); // 57.1s
+      try {
+        vi.advanceTimersByTime(16);
+        expect(callbacks.onCountdownBeep).toHaveBeenCalled();
+      } finally {
+        nowSpy.mockRestore();
+      }
     });
     
     it("reports correct EMOM index and names", () => {
        const engine = new TimerEngine(defaultConfig, callbacks);
        engine.start();
        
-       const originalNow = Date.now;
-       Date.now = vi.fn(() => engine.state.startTime + 65000); // 65 seconds elapsed
-       
-       vi.advanceTimersByTime(16); // Cross into round 2 natively
-       expect(callbacks.onIntervalStart).toHaveBeenCalledWith(1, "Round 2");
-       
-       Date.now = originalNow;
+       const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(engine.state.startTime + 65000); // 65s
+       try {
+         vi.advanceTimersByTime(16);
+         expect(callbacks.onIntervalStart).toHaveBeenCalledWith(1, "Round 2");
+       } finally {
+         nowSpy.mockRestore();
+       }
     });
   });
 

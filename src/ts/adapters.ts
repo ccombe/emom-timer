@@ -29,11 +29,11 @@ export class WebSpeechAdapter implements ISpeechService {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1;
     utterance.pitch = 1;
-    globalThis.speechSynthesis.speak(utterance);
+    globalThis.window.speechSynthesis.speak(utterance);
   }
   public cancel(): void {
-    if (globalThis === undefined || !("speechSynthesis" in globalThis)) return;
-    globalThis.speechSynthesis.cancel();
+    if (globalThis.window === undefined || !("speechSynthesis" in globalThis.window)) return;
+    globalThis.window.speechSynthesis.cancel();
   }
 }
 

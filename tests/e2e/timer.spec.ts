@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('App rendering and mechanics', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/emom-timer/');
   });
 
   test('Has expected title and initial state', async ({ page }) => {
