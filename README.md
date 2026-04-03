@@ -6,7 +6,11 @@ A simple, lightweight, and portable EMOM (Every Minute on the Minute) timer buil
 
 ## Features
 
-- **Portability**: Runs entirely in the browser with no external dependencies or internet connection required.
+- **PWA Installation**: Install the timer directly to your mobile home screen or desktop natively for a full app experience with background audio persistence.
+- **Timer Modes**:
+  - **EMOM Mode**: Standard repeating intervals natively.
+  - **Fartlek / Custom Mode**: Variable interval routines (e.g. 60s Walk, 120s Jog, 30s Sprint) supported seamlessly.
+- **Portability**: Runs entirely offline with no external dependencies after initial load.
 - **Visual Feedback**:
   - **Interval Ring**: Fills up as the minute progresses.
   - **Total Progress Ring**: Tracks the overall session completion.
@@ -52,7 +56,7 @@ We have big plans to expand this tool while keeping it simple and effective:
 graph TD
     User[User] -->|Interacts| UI["Web Interface (Vanilla JS)"]
     UI -->|Logic| App[App Logic]
-    App -->|Persists| DB[(IndexedDB (Local Storage))]
+    App -->|Persists| DB[("IndexedDB (Local Storage)")]
     App -->|Syncs (Planned)| GoogleFit[Google Fit API]
 
     subgraph "Client Side (GitHub Pages)"

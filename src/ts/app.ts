@@ -224,27 +224,38 @@ ui.closeSettingsBtn.addEventListener("click", () => {
   applySettings();
 });
 
+ui.timerModeSelect.addEventListener("change", () => {
+  if (ui.timerModeSelect.value === "fartlek") {
+    // Auto populate activity type to "Running / Fartlek" (8)
+    ui.activityTypeSelect.value = "8";
+  } else if (ui.timerModeSelect.value === "emom" && ui.activityTypeSelect.value === "8") {
+    // Revert back to Kettlebell for EMOM if it was strictly on Running
+    ui.activityTypeSelect.value = "115";
+  }
+});
+
 ui.connectFitBtn.addEventListener("click", () => {
   googleFit.initialize();
   googleFit.connect();
   // Success handled by event listener above
 });
 
+function getDefaultFartlekPhases() {
+  return [
+    { name: "Walk", durationSecs: 60 },
+    { name: "Jog", durationSecs: 120 },
+    { name: "Walk", durationSecs: 60 },
+    { name: "Run", durationSecs: 30 }
+  ];
+}
+
 function applySettings() {
   const modeVal = ui.timerModeSelect ? (ui.timerModeSelect.value as TimerMode) : "emom";
-  let defaultPhases = undefined;
-  if (modeVal === "fartlek" && (!CONFIG.phases || CONFIG.phases.length === 0)) {
-    defaultPhases = [
-      { name: "Walk", durationSecs: 60 },
-      { name: "Jog", durationSecs: 120 },
-      { name: "Walk", durationSecs: 60 },
-      { name: "Run", durationSecs: 30 }
-    ];
-  }
+  const customPhases = CONFIG.phases?.length ? CONFIG.phases : getDefaultFartlekPhases();
 
   const newSettings = {
     mode: modeVal,
-    phases: modeVal === "fartlek" ? (CONFIG.phases || defaultPhases) : undefined,
+    phases: modeVal === "fartlek" ? customPhases : undefined,
     intervalCount: Number.parseInt(ui.intervalCountInput.value) || 1,
     intervalSecs: Number.parseInt(ui.intervalDurationSelect.value),
     activityType: Number.parseInt(ui.activityTypeSelect.value) || 115,
@@ -252,9 +263,10 @@ function applySettings() {
   };
 
   const oldIncludeLocation = CONFIG.includeLocation;
+  const oldMode = CONFIG.mode; // Capture BEFORE saveAndApplyConfig mutates it
   saveAndApplyConfig(newSettings);
   handleLocationUpdate(newSettings.includeLocation, oldIncludeLocation);
-  handleTimerUpdate(newSettings.intervalCount, newSettings.intervalSecs, newSettings.mode);
+  handleTimerUpdate(newSettings.intervalCount, newSettings.intervalSecs, newSettings.mode, oldMode);
 }
 
 function saveAndApplyConfig(settings: {
@@ -281,9 +293,9 @@ function handleLocationUpdate(newIncludeLocation: boolean, oldIncludeLocation: b
   }
 }
 
-function handleTimerUpdate(newIntervalCount: number, newIntervalSecs: number, newMode: TimerMode) {
+function handleTimerUpdate(newIntervalCount: number, newIntervalSecs: number, newMode: TimerMode, oldMode: TimerMode) {
   const timerParamsChanged =
-    newIntervalCount !== CONFIG.intervalCount || newIntervalSecs !== CONFIG.intervalSecs || newMode !== CONFIG.mode;
+    newIntervalCount !== CONFIG.intervalCount || newIntervalSecs !== CONFIG.intervalSecs || newMode !== oldMode;
 
   if (timerParamsChanged) {
     CONFIG.intervalCount = newIntervalCount;

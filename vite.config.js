@@ -43,6 +43,9 @@ export default defineConfig({
           },
         ],
       },
+      devOptions: {
+        enabled: !process.env.CI
+      }
     }),
   ],
   server: {
@@ -52,5 +55,6 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["fake-indexeddb/auto"],
+    exclude: ["tests/e2e/**", "node_modules/**"],
   },
 });

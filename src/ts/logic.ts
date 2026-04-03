@@ -150,6 +150,7 @@ export function normalizeConfig(
 ): Omit<TimerConfig, "totalDurationSecs"> {
   if (!settings) {
     return {
+      mode: defaults.mode || "emom",
       intervalCount: defaults.intervalCount,
       intervalSecs: defaults.intervalSecs,
       activityType: defaults.activityType,
@@ -158,6 +159,7 @@ export function normalizeConfig(
   }
 
   return {
+    mode: settings.mode || defaults.mode || "emom",
     intervalCount: determineIntervalCount(settings, defaults),
     intervalSecs: settings.intervalSecs || defaults.intervalSecs,
     activityType: settings.activityType || 115, // Default to Kettlebell if missing/zero

@@ -204,6 +204,7 @@ describe("Core Logic", () => {
 
 describe("normalizeConfig", () => {
   const defaults: TimerConfig = {
+    mode: "emom",
     intervalCount: 5,
     intervalSecs: 60,
     activityType: 115,
@@ -213,12 +214,14 @@ describe("normalizeConfig", () => {
 
   it("returns defaults if settings are null/undefined", () => {
     expect(normalizeConfig(null, defaults)).toEqual({
+      mode: "emom",
       intervalCount: 5,
       intervalSecs: 60,
       activityType: 115,
       includeLocation: false,
     });
     expect(normalizeConfig(undefined, defaults)).toEqual({
+      mode: "emom",
       intervalCount: 5,
       intervalSecs: 60,
       activityType: 115,

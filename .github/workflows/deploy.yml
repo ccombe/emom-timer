@@ -1,12 +1,12 @@
-name: CI
+name: Deploy
 
 on:
-  pull_request:
+  push:
     branches: ["master"]
 
 concurrency:
-  group: "ci-${{ github.head_ref }}"
-  cancel-in-progress: true
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   unit-tests:
@@ -31,16 +31,15 @@ jobs:
       - name: Run unit tests with coverage
         run: pnpm coverage
 
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/
-
       - name: Build for production
         run: pnpm build
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+
+      - name: Upload dist for deployment
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./dist"
 
   e2e-tests:
     name: Playwright E2E Tests
@@ -70,9 +69,18 @@ jobs:
           HOME: /root
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
 
-      - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: playwright-report
-          path: playwright-report/
+  deploy:
+    name: Deploy to GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    needs: [unit-tests, e2e-tests]
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
