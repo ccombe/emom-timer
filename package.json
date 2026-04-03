@@ -24,7 +24,7 @@
     "format": "oxfmt"
   },
   "devDependencies": {
-    "@types/node": "^24.12.2",
+    "@types/node": "^25.5.2",
     "@vitest/coverage-v8": "latest",
     "fake-indexeddb": "^6.2.5",
     "idb": "^8.0.3",
