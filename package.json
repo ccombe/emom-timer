@@ -19,11 +19,15 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "coverage": "vitest run --coverage",
     "lint": "oxlint",
     "format": "oxfmt"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
+    "@playwright/test": "^1.59.1",
     "@types/node": "^24.12.2",
     "@vitest/coverage-v8": "latest",
     "fake-indexeddb": "^6.2.5",

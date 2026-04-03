@@ -69,7 +69,6 @@ body.victory {
   font-size: 20vmin;
   opacity: 0;
   /* pointer-events: none; Remove this so button is clickable */
-  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   z-index: 5;
   display: flex;
   flex-direction: column;
@@ -226,9 +225,6 @@ button.primary:hover {
   backdrop-filter: blur(10px);
   width: 80vmin;
   max-width: 300px;
-  transition:
-    opacity 0.3s,
-    transform 0.3s;
   opacity: 0;
   pointer-events: none;
   transform: translateX(-50%) translateY(20px);

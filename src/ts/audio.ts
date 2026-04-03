@@ -23,9 +23,9 @@ export class AudioManager {
     }
   }
 
-  public playBell(): void {
+  private createOscillatorAndGain(): { osc: OscillatorNode; gainNode: GainNode; ctx: AudioContext } | null {
     this.ensureAudioContext();
-    if (!this.audioCtx) return;
+    if (!this.audioCtx) return null;
 
     const osc = this.audioCtx.createOscillator();
     const gainNode = this.audioCtx.createGain();
@@ -33,16 +33,24 @@ export class AudioManager {
     osc.connect(gainNode);
     gainNode.connect(this.audioCtx.destination);
 
+    return { osc, gainNode, ctx: this.audioCtx };
+  }
+
+  public playBell(): void {
+    const nodes = this.createOscillatorAndGain();
+    if (!nodes) return;
+    const { osc, gainNode, ctx } = nodes;
+
     // Bell-like parameters
     osc.type = "sine";
-    osc.frequency.setValueAtTime(880, this.audioCtx.currentTime); // High A
-    osc.frequency.exponentialRampToValueAtTime(440, this.audioCtx.currentTime + 0.1);
+    osc.frequency.setValueAtTime(880, ctx.currentTime); // High A
+    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
 
-    gainNode.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 1.5);
+    gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
 
     osc.start();
-    osc.stop(this.audioCtx.currentTime + 1.5);
+    osc.stop(ctx.currentTime + 1.5);
   }
 
   public announcePhase(text: string): void {
@@ -51,15 +59,14 @@ export class AudioManager {
   }
 
   public maintainLockScreenAudio(): void {
-    this.ensureAudioContext();
-    if (!this.audioCtx || this.silentOsc) return;
+    if (this.silentOsc) return;
 
-    this.silentOsc = this.audioCtx.createOscillator();
-    const gainNode = this.audioCtx.createGain();
+    const nodes = this.createOscillatorAndGain();
+    if (!nodes) return;
+    
+    this.silentOsc = nodes.osc;
+    const gainNode = nodes.gainNode;
     gainNode.gain.value = 0; // Absolute silence
-
-    this.silentOsc.connect(gainNode);
-    gainNode.connect(this.audioCtx.destination);
     
     this.silentOsc.start();
   }
@@ -77,24 +84,19 @@ export class AudioManager {
   }
 
   public playCountdownBeep(frequency: number = 440): void {
-    this.ensureAudioContext();
-    if (!this.audioCtx) return;
-
-    const osc = this.audioCtx.createOscillator();
-    const gainNode = this.audioCtx.createGain();
-
-    osc.connect(gainNode);
-    gainNode.connect(this.audioCtx.destination);
+    const nodes = this.createOscillatorAndGain();
+    if (!nodes) return;
+    const { osc, gainNode, ctx } = nodes;
 
     osc.type = "sine";
-    osc.frequency.setValueAtTime(frequency, this.audioCtx.currentTime);
+    osc.frequency.setValueAtTime(frequency, ctx.currentTime);
 
     // Short pip
-    gainNode.gain.setValueAtTime(0.2, this.audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.1);
+    gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
 
     osc.start();
-    osc.stop(this.audioCtx.currentTime + 0.1);
+    osc.stop(ctx.currentTime + 0.1);
   }
 
   public playEndSound(): void {
@@ -109,11 +111,9 @@ export class AudioManager {
     const notes = [523.25, 659.25, 783.99, 1046.5];
 
     notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      const nodes = this.createOscillatorAndGain();
+      if (!nodes) return;
+      const { osc, gainNode } = nodes;
 
       osc.type = "triangle"; // triangle sounds a bit more 'gamey'/'fun' than sine
       osc.frequency.value = freq;
@@ -122,9 +122,9 @@ export class AudioManager {
       const startTime = now + i * 0.1;
       const duration = 0.8;
 
-      gain.gain.setValueAtTime(0, startTime);
-      gain.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+      gainNode.gain.setValueAtTime(0, startTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
       osc.start(startTime);
       osc.stop(startTime + duration);
@@ -135,18 +135,17 @@ export class AudioManager {
       // Check if ctx is still valid
       if (ctx.state === "closed") return;
 
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      const nodes = this.createOscillatorAndGain();
+      if (!nodes) return;
+      const { osc, gainNode } = nodes;
 
       osc.type = "square"; // chiptune style punch
       osc.frequency.value = 523.25; // C5
 
       const finalStart = now + 0.4;
-      gain.gain.setValueAtTime(0, finalStart);
-      gain.gain.linearRampToValueAtTime(0.2, finalStart + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, finalStart + 1.5);
+      gainNode.gain.setValueAtTime(0, finalStart);
+      gainNode.gain.linearRampToValueAtTime(0.2, finalStart + 0.05);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, finalStart + 1.5);
 
       osc.start(finalStart);
       osc.stop(finalStart + 1.5);

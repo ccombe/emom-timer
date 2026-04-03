@@ -38,20 +38,20 @@ export class UIManager {
   private readonly INTERVAL_CIRCUMFERENCE: number = 2 * Math.PI * 70;
 
   constructor() {
-    this.timerDisplay = document.getElementById("timer-display") as HTMLElement;
-    this.intervalDisplay = document.getElementById("interval-display") as HTMLElement;
-    this.streakDisplay = document.getElementById("streak-display") as HTMLElement;
+    this.timerDisplay = document.getElementById("timer-display")!;
+    this.intervalDisplay = document.getElementById("interval-display")!;
+    this.streakDisplay = document.getElementById("streak-display")!;
 
     this.totalRing = document.getElementById("total-ring-fg") as unknown as SVGCircleElement;
     this.intervalRing = document.getElementById("interval-ring-fg") as unknown as SVGCircleElement;
 
     this.startBtn = document.getElementById("start-btn") as HTMLButtonElement;
     this.resetBtn = document.getElementById("reset-btn") as HTMLButtonElement;
-    this.trophyOverlay = document.getElementById("trophy-overlay") as HTMLElement;
+    this.trophyOverlay = document.getElementById("trophy-overlay")!;
 
     // Settings
     this.settingsToggle = document.getElementById("settings-toggle") as HTMLButtonElement;
-    this.settingsPanel = document.getElementById("settings-panel") as HTMLElement;
+    this.settingsPanel = document.getElementById("settings-panel")!;
     this.closeSettingsBtn = document.getElementById("close-settings-btn") as HTMLButtonElement;
 
     this.timerModeSelect = document.getElementById("timer-mode-select") as HTMLSelectElement;
@@ -63,9 +63,9 @@ export class UIManager {
     this.locationToggle = document.getElementById("location-toggle") as HTMLInputElement;
 
     this.connectFitBtn = document.getElementById("connect-google-fit-btn") as HTMLButtonElement;
-    this.fitStatus = document.getElementById("google-fit-status") as HTMLElement;
-    this.fitIcon = document.getElementById("fit-status-icon") as HTMLElement;
-    this.toastContainer = document.getElementById("toast-container") as HTMLElement;
+    this.fitStatus = document.getElementById("google-fit-status")!;
+    this.fitIcon = document.getElementById("fit-status-icon")!;
+    this.toastContainer = document.getElementById("toast-container")!;
     this.trophyContinueBtn = document.getElementById("trophy-continue-btn") as HTMLButtonElement;
   }
 
@@ -152,17 +152,32 @@ export class UIManager {
   }
 
   public clearVisuals(): void {
-    document.body.classList.remove("victory");
-    this.trophyOverlay.classList.remove("show");
+    this.withTransition(() => {
+      document.body.classList.remove("victory");
+      this.trophyOverlay.classList.remove("show");
+    });
     this.trophyContinueBtn.style.display = "none";
   }
 
+  // Advanced View Transitions API Helper
+  private withTransition(action: () => void): void {
+    if ("startViewTransition" in document) {
+      (document as any).startViewTransition(action);
+    } else {
+      action();
+    }
+  }
+
   public showSettings(): void {
-    this.settingsPanel.classList.add("visible");
+    this.withTransition(() => {
+      this.settingsPanel.classList.add("visible");
+    });
   }
 
   public hideSettings(): void {
-    this.settingsPanel.classList.remove("visible");
+    this.withTransition(() => {
+      this.settingsPanel.classList.remove("visible");
+    });
   }
 
   public setSettingsInputs(config: TimerConfig): void {

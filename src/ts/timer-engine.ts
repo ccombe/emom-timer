@@ -107,8 +107,12 @@ export class TimerEngine {
     this.animationFrameId = requestAnimationFrame(this.tick);
   };
 
+  private get isFartlekMode(): boolean {
+    return this.config.mode === "fartlek" && Boolean(this.config.phases?.length);
+  }
+
   private getCurrentPhaseInfo() {
-    if (this.config.mode === "fartlek" && this.config.phases && this.config.phases.length > 0) {
+    if (this.isFartlekMode && this.config.phases) {
       let accum = 0;
       for (let i = 0; i < this.config.phases.length; i++) {
         const pDuration = this.config.phases[i].durationSecs;

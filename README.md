@@ -52,7 +52,7 @@ We have big plans to expand this tool while keeping it simple and effective:
 graph TD
     User[User] -->|Interacts| UI["Web Interface (Vanilla JS)"]
     UI -->|Logic| App[App Logic]
-    App -->|Persists| DB[(IndexedDB (Local Storage))]
+    App -->|Persists| DB[("IndexedDB (Local Storage)")]
     App -->|Syncs (Planned)| GoogleFit[Google Fit API]
 
     subgraph "Client Side (GitHub Pages)"

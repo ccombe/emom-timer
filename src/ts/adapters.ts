@@ -25,21 +25,21 @@ export interface IMediaSessionService {
  */
 export class WebSpeechAdapter implements ISpeechService {
   public speak(text: string): void {
-    if (typeof globalThis === "undefined" || !("speechSynthesis" in globalThis)) return;
+    if (globalThis.window === undefined || !("speechSynthesis" in globalThis.window)) return;
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1;
     utterance.pitch = 1;
     globalThis.speechSynthesis.speak(utterance);
   }
   public cancel(): void {
-    if (typeof globalThis === "undefined" || !("speechSynthesis" in globalThis)) return;
+    if (globalThis === undefined || !("speechSynthesis" in globalThis)) return;
     globalThis.speechSynthesis.cancel();
   }
 }
 
 export class MediaSessionAdapter implements IMediaSessionService {
   public configure(options: IMediaSessionOptions): void {
-    if (typeof globalThis.navigator !== "undefined" && "mediaSession" in globalThis.navigator) {
+    if (globalThis.navigator !== undefined && "mediaSession" in globalThis.navigator) {
       globalThis.navigator.mediaSession.metadata = new MediaMetadata({
         title: options.title,
         artist: options.artist,
@@ -50,7 +50,7 @@ export class MediaSessionAdapter implements IMediaSessionService {
   }
 
   public clear(): void {
-    if (typeof globalThis.navigator !== "undefined" && "mediaSession" in globalThis.navigator) {
+    if (globalThis.navigator !== undefined && "mediaSession" in globalThis.navigator) {
       globalThis.navigator.mediaSession.metadata = null;
       globalThis.navigator.mediaSession.setActionHandler("play", null);
       globalThis.navigator.mediaSession.setActionHandler("pause", null);
