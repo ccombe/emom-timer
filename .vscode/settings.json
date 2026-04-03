@@ -4,5 +4,6 @@
   "sonarlint.connectedMode.project": {
     "connectionId": "ccombe",
     "projectKey": "ccombe_emom-timer"
-  }
+  },
+  "codescene.enableAutoRefactor": false
 }
