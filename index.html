@@ -28,6 +28,13 @@
     <main>
       <div id="settings-panel">
         <div class="setting-group">
+          <label for="timer-mode-select">Training Mode</label>
+          <select id="timer-mode-select">
+            <option value="emom" selected>Fixed Time (EMOM)</option>
+            <option value="fartlek">Dynamic (Walk/Jog/Run)</option>
+          </select>
+        </div>
+        <div class="setting-group">
           <label for="interval-count-input">Number of Rounds</label>
           <input
             type="number"

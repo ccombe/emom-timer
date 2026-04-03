@@ -1,9 +1,18 @@
+export type TimerMode = "emom" | "fartlek";
+
+export interface TimerPhase {
+  name: string;
+  durationSecs: number;
+}
+
 export interface TimerConfig {
+  mode: TimerMode;
   intervalCount: number;
   intervalSecs: number;
   activityType: number;
   includeLocation: boolean;
   readonly totalDurationSecs: number;
+  phases?: TimerPhase[];
 }
 
 export interface TimerState {
@@ -13,7 +22,11 @@ export interface TimerState {
   lastFrameTime: number;
   currentTotalElapsed: number;
   lastBeepSecond: string | number;
-  location: LocationData | null;
+  location: { lat: number; lng: number } | null;
+  currentPhaseIndex?: number;
+  currentPhaseDuration?: number;
+  currentPhaseElapsed?: number;
+  currentPhaseName?: string;
 }
 
 export interface WorkoutSession {

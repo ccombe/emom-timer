@@ -1,5 +1,13 @@
+import { ISpeechService, WebSpeechAdapter } from "./adapters.ts";
+
 export class AudioManager {
   private audioCtx: AudioContext | undefined;
+  private readonly speechAdapter: ISpeechService;
+  private silentOsc: OscillatorNode | undefined;
+
+  constructor(speechAdapter?: ISpeechService) {
+    this.speechAdapter = speechAdapter || new WebSpeechAdapter();
+  }
 
   // Audio Context Init (Lazy load on user interaction)
   public ensureAudioContext(): void {
@@ -35,6 +43,37 @@ export class AudioManager {
 
     osc.start();
     osc.stop(this.audioCtx.currentTime + 1.5);
+  }
+
+  public announcePhase(text: string): void {
+    this.speechAdapter.cancel();
+    this.speechAdapter.speak(text);
+  }
+
+  public maintainLockScreenAudio(): void {
+    this.ensureAudioContext();
+    if (!this.audioCtx || this.silentOsc) return;
+
+    this.silentOsc = this.audioCtx.createOscillator();
+    const gainNode = this.audioCtx.createGain();
+    gainNode.gain.value = 0; // Absolute silence
+
+    this.silentOsc.connect(gainNode);
+    gainNode.connect(this.audioCtx.destination);
+    
+    this.silentOsc.start();
+  }
+
+  public releaseLockScreenAudio(): void {
+    if (this.silentOsc) {
+      try {
+        this.silentOsc.stop();
+        this.silentOsc.disconnect();
+      } catch (e: unknown) {
+        console.warn("Failed to stop silent oscillator", e);
+      }
+      this.silentOsc = undefined;
+    }
   }
 
   public playCountdownBeep(frequency: number = 440): void {
