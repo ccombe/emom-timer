@@ -83,36 +83,7 @@ export class AudioManager {
     }
   }
 
-  public announcePhase(text: string): void {
-    this.speechAdapter.cancel();
-    this.speechAdapter.speak(text);
-  }
 
-  public maintainLockScreenAudio(): void {
-    this.ensureAudioContext();
-    if (!this.audioCtx || this.silentOsc) return;
-
-    this.silentOsc = this.audioCtx.createOscillator();
-    const gainNode = this.audioCtx.createGain();
-    gainNode.gain.value = 0; // Absolute silence
-
-    this.silentOsc.connect(gainNode);
-    gainNode.connect(this.audioCtx.destination);
-    
-    this.silentOsc.start();
-  }
-
-  public releaseLockScreenAudio(): void {
-    if (this.silentOsc) {
-      try {
-        this.silentOsc.stop();
-        this.silentOsc.disconnect();
-      } catch (e: unknown) {
-        console.warn("Failed to stop silent oscillator", e);
-      }
-      this.silentOsc = undefined;
-    }
-  }
 
   public playCountdownBeep(frequency: number = 440): void {
     const nodes = this.createOscillatorAndGain();
