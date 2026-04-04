@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
 
+// Explicitly fake value used only to verify the OAuth callback path — not a real credential
+const TEST_OAUTH_PLACEHOLDER = '[test-only-not-a-real-token]';
+
 test.describe('Google Fit Integration', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/emom-timer/');
@@ -13,26 +16,26 @@ test.describe('Google Fit Integration', () => {
   });
 
   test('Google Identity Services (GIS) library loads successfully', async ({ page }) => {
-    // Wait for the GIS script to load — window.google should be defined
-    await page.waitForFunction(() => typeof (window as any).google !== 'undefined', {
+    // Wait for the GIS script to load — globalThis.google should be defined
+    await page.waitForFunction(() => (globalThis as any).google !== undefined, {
       timeout: 10000,
     });
-    const googleDefined = await page.evaluate(() => typeof (window as any).google !== 'undefined');
+    const googleDefined = await page.evaluate(() => (globalThis as any).google !== undefined);
     expect(googleDefined).toBe(true);
   });
 
   test('Clicking connect button triggers GIS token request (mocked)', async ({ page }) => {
     // Inject a mock google.accounts.oauth2 before clicking
     await page.evaluate(() => {
-      (window as any).__mockTokenRequested = false;
-      (window as any).google = {
+      (globalThis as any).__mockTokenRequested = false;
+      (globalThis as any).google = {
         accounts: {
           oauth2: {
             initTokenClient: (config: any) => ({
               requestAccessToken: () => {
-                (window as any).__mockTokenRequested = true;
+                (globalThis as any).__mockTokenRequested = true;
                 // Simulate a successful token response
-                config.callback({ access_token: 'mock_token', expires_in: 3600 });
+                config.callback({ access_token: TEST_OAUTH_PLACEHOLDER, expires_in: 3600 });
               },
             }),
           },
@@ -44,7 +47,7 @@ test.describe('Google Fit Integration', () => {
     await page.locator('#close-settings-btn').click();
 
     // Verify the mock requestAccessToken was called
-    const wasRequested = await page.evaluate(() => (window as any).__mockTokenRequested);
+    const wasRequested = await page.evaluate(() => (globalThis as any).__mockTokenRequested);
     expect(wasRequested).toBe(true);
   });
 });
