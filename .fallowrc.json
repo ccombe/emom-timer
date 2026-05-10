@@ -1,5 +1,10 @@
 {
   "entry": ["src/vitest.setup.ts"],
+  "ignoreDependencies": [
+    "eslint-plugin-testing-library",
+    "eslint-plugin-playwright",
+    "eslint-plugin-sonarjs"
+  ],
   "usedClassMembers": [
     {
       "implements": "IMediaSessionService",
