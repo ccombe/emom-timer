@@ -1,8 +1,8 @@
 import { openDB, IDBPDatabase, DBSchema } from "idb";
 import { SavedSettings, WorkoutSession } from "./types.ts";
-import { calculateStreak } from "./logic.ts"; // Explicit extension for now if needed by bundler settings, usually not
+import { calculateStreak } from "./logic.ts";
 
-const DB_NAME = "emom-timer-db";
+const DEFAULT_DB_NAME = "emom-timer-db";
 const DB_VERSION = 1;
 
 interface TimerDB extends DBSchema {
@@ -18,10 +18,15 @@ interface TimerDB extends DBSchema {
 }
 
 export class StorageService {
+  private readonly dbName: string;
   private dbPromise!: Promise<IDBPDatabase<TimerDB>>;
 
+  constructor(dbName?: string) {
+    this.dbName = dbName || DEFAULT_DB_NAME;
+  }
+
   public async init(): Promise<void> {
-    this.dbPromise = openDB<TimerDB>(DB_NAME, DB_VERSION, {
+    this.dbPromise = openDB<TimerDB>(this.dbName, DB_VERSION, {
       upgrade(db) {
         // Store for workout sessions
         if (!db.objectStoreNames.contains("sessions")) {
@@ -52,11 +57,6 @@ export class StorageService {
     return record;
   }
 
-  async getHistory(): Promise<(WorkoutSession & { date: Date })[]> {
-    const db = await this.dbPromise;
-    return db.getAllFromIndex("sessions", "date");
-  }
-
   async saveSettings(settings: SavedSettings): Promise<void> {
     const db = await this.dbPromise;
     await db.put("settings", settings, "config");
@@ -77,10 +77,5 @@ export class StorageService {
 
     const dates = sessions.map((s) => s.date);
     return calculateStreak(dates);
-  }
-
-  async close(): Promise<void> {
-    const db = await this.dbPromise;
-    db.close();
   }
 }
