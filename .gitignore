@@ -8,6 +8,7 @@ coverage/
 
 # Snyk Security Extension - AI Rules (auto-generated)
 .agent/rules/snyk_rules.md
+snyk/
 .sonarlint/connectedMode.json
 test-results/
 playwright-report/
