@@ -37,7 +37,7 @@ describe("TimerEngine Core Coverage", () => {
   });
 
   describe("State Management", () => {
-    it("should start and toggle correctly", () => {
+    it("should start and pause correctly", () => {
       const engine = new TimerEngine(defaultConfig, callbacks);
       expect(engine.state.isRunning).toBe(false);
 
@@ -49,12 +49,12 @@ describe("TimerEngine Core Coverage", () => {
       engine.start();
       expect(engine.state.isRunning).toBe(true);
 
-      // Toggle should pause
-      engine.toggle();
+      // Pause
+      engine.pause();
       expect(engine.state.isRunning).toBe(false);
       
-      // Toggle should start again
-      engine.toggle();
+      // Start again
+      engine.start();
       expect(engine.state.isRunning).toBe(true);
     });
 
@@ -71,13 +71,15 @@ describe("TimerEngine Core Coverage", () => {
       expect(callbacks.onTick).toHaveBeenCalled(); // Should trigger a final dom update
     });
 
-    it("should toggle to start from beginning if finished", () => {
+    it("should reset and start from beginning if finished", () => {
       const engine = new TimerEngine(defaultConfig, callbacks);
       engine.start();
       engine.state.currentTotalElapsed = 300; // Total duration reached
       engine.pause(); // Pause it naturally since checkCompletion would normally pause it natively
       
-      engine.toggle(); // Because it's finished, this should reset AND start again natively
+      // Simulate what toggle() used to do: reset then start
+      engine.reset();
+      engine.start();
       
       expect(engine.state.isRunning).toBe(true);
       expect(engine.state.currentTotalElapsed).toBe(0);

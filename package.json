@@ -1,6 +1,7 @@
 {
   "name": "emom-timer",
   "version": "1.0.0",
+  "type": "module",
   "description": "[**🏆 Live Demo &rarr;**](https://ccombe.github.io/emom-timer/)",
   "keywords": [],
   "homepage": "https://github.com/ccombe/emom-timer#readme",
@@ -13,7 +14,6 @@
     "type": "git",
     "url": "git+https://github.com/ccombe/emom-timer.git"
   },
-  "main": "src/js/app.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -22,28 +22,38 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "coverage": "vitest run --coverage",
-    "lint": "oxlint",
-    "format": "oxfmt"
+    "lint": "oxlint -c .oxlintrc.json",
+    "format": "oxfmt",
+    "fallow": "fallow dead-code --fail-on-issues",
+    "deps": "fallow dead-code --unused-deps --unlisted-deps --fail-on-issues",
+    "analyze": "fallow --fail-on-issues",
+    "dead-code": "fallow dead-code --fail-on-issues",
+    "mcp:fallow": "fallow-mcp"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.11.1",
+    "@axe-core/playwright": "^4.11.3",
     "@playwright/test": "^1.59.1",
-    "@types/node": "^24.12.2",
+    "@types/node": "^24.12.3",
     "@vitest/coverage-v8": "latest",
+    "eslint-plugin-playwright": "^2.10.2",
+    "eslint-plugin-sonarjs": "^4.0.3",
+    "eslint-plugin-testing-library": "^7.16.2",
     "fake-indexeddb": "^6.2.5",
+    "fallow": "^2.67.0",
     "idb": "^8.0.3",
-    "jsdom": "^29.0.1",
+    "jsdom": "^29.1.1",
     "oxfmt": "latest",
     "oxlint": "latest",
-    "typescript": "^6.0.2",
+    "oxlint-tsgolint": "^0.22.1",
+    "typescript": "^6.0.3",
     "vite": "latest",
-    "vite-plugin-pwa": "^1.2.0",
+    "vite-plugin-pwa": "^1.3.0",
     "vitest": "latest"
   },
   "engines": {
     "node": ">=24.0.0"
   },
-  "packageManager": "pnpm@10.30.3",
+  "packageManager": "pnpm@11.0.4",
   "pnpm": {
     "overrides": {
       "rollup@>=4.0.0 <4.59.0": ">=4.59.0"
