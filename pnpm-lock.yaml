@@ -10,10 +10,10 @@ importers:
     devDependencies:
       '@axe-core/playwright':
         specifier: ^4.11.3
-        version: 4.11.3(playwright-core@1.59.1)
+        version: 4.11.3(playwright-core@1.60.0)
       '@playwright/test':
-        specifier: ^1.59.1
-        version: 1.59.1
+        specifier: ^1.60.0
+        version: 1.60.0
       '@types/node':
         specifier: ^24.12.3
         version: 24.12.3
@@ -33,8 +33,8 @@ importers:
         specifier: ^6.2.5
         version: 6.2.5
       fallow:
-        specifier: ^2.67.0
-        version: 2.67.0
+        specifier: ^2.75.0
+        version: 2.75.0
       idb:
         specifier: ^8.0.3
         version: 8.0.3
@@ -684,43 +684,43 @@ packages:
       '@noble/hashes':
         optional: true
 
-  '@fallow-cli/darwin-arm64@2.67.0':
-    resolution: {integrity: sha512-pDs2DyoJW8ikPxgpCV0pH6ix2DNbNrmDBNz3as1+K5fKo4d6iML3/RlNvjpQPHjxyrainfMdzFmETay+JbAR0g==}
+  '@fallow-cli/darwin-arm64@2.75.0':
+    resolution: {integrity: sha512-izJTjYPNdiWPbf7QjVwje0JwJeVQJAUuncjPkuAO9hRM3t4oJ9fqAvyEXyyRq4dAJS4NO4DMEsPsN82QOF8fGw==}
     cpu: [arm64]
     os: [darwin]
 
-  '@fallow-cli/darwin-x64@2.67.0':
-    resolution: {integrity: sha512-My2gxdt2EURGSHmDlfvQghI6uFEKiiS2xN50lGZi0K3N9gc6+YC9Cq7wVxt5hPqiP/urMmceU4gErkI+L93s6Q==}
+  '@fallow-cli/darwin-x64@2.75.0':
+    resolution: {integrity: sha512-hZzaSidHYKFC82bjP/L+xKOp67ESgNjSUX3U2HzaBg/dKFVcyMFxub3O7r3SBFBU2zY5wsZK1qmfpw/oC01vsg==}
     cpu: [x64]
     os: [darwin]
 
-  '@fallow-cli/linux-arm64-gnu@2.67.0':
-    resolution: {integrity: sha512-4c4b9kl8H1Fqu6a4MN8GciD2A949i4dT2tBZN75oPSJo4LKHFv91Zgj/DjmVACw9KXPtTTFCqqEekCwXpwHDFA==}
+  '@fallow-cli/linux-arm64-gnu@2.75.0':
+    resolution: {integrity: sha512-K5ymLWqR6NJUV+wVDFK0+bKK4YSzYo9Lr2Xla5YptW6FnlpEAvRDdcr3lGdf3Ge1T14fKU3ys8dKHDHkJSeyeA==}
     cpu: [arm64]
     os: [linux]
 
-  '@fallow-cli/linux-arm64-musl@2.67.0':
-    resolution: {integrity: sha512-ytP8nTtSU1vkgXkt+BpH2tk87J/d0/NYrGfO5pG2mW0wPOWzRVwFN7lP0JE612ZzKfbId0r8t+Y0WAVuOl723Q==}
+  '@fallow-cli/linux-arm64-musl@2.75.0':
+    resolution: {integrity: sha512-FRBz19XQ6pPjnhsIry0w0cRqUEYGZH6rEDCau3SGa2DNgts/i4573HJOn7ZRAzgSNMtgoh3KKTyUNOEzNLTl0A==}
     cpu: [arm64]
     os: [linux]
 
-  '@fallow-cli/linux-x64-gnu@2.67.0':
-    resolution: {integrity: sha512-NjNJxugyRsFpce2894KsNz88uWX+V2CzX7WmC2gSbnqAJbvwG/am9A6gf5QvYy6hiW72e5sLBoXRT5lc9fj1BQ==}
+  '@fallow-cli/linux-x64-gnu@2.75.0':
+    resolution: {integrity: sha512-81xmIf9G8hVTKbQGRGV6oTbu9W5XQPpKFpfXS3KFu16bbdgfwEaKzr5E7Y7dxECYsskhIiff5zdHcEPOFv29Wg==}
     cpu: [x64]
     os: [linux]
 
-  '@fallow-cli/linux-x64-musl@2.67.0':
-    resolution: {integrity: sha512-bjSQsvhWXrcXN3UWeA2Dehch0C1nhaVPjQkkkRBqTx/kv7YMMCsi2vu3XwEXuASAGDJkINBiwfDSlr08+aSq3A==}
+  '@fallow-cli/linux-x64-musl@2.75.0':
+    resolution: {integrity: sha512-lVPjmM+dGy3NG6nJ9PaZfkUClZC6OyfwyqVZdQFhq+6Xl/2c2jZI9vgmwIDBIGBhL9TU+V8NdSM7Xy85ifeOyw==}
     cpu: [x64]
     os: [linux]
 
-  '@fallow-cli/win32-arm64-msvc@2.67.0':
-    resolution: {integrity: sha512-kep5YQEmcHRn2mtkYYnLxjMFte+DoV0qLq6S8xIH917wEyGV8Tg+mp4sXhgl8x1Bk5JjRPMKx2BNaUK7IUaVog==}
+  '@fallow-cli/win32-arm64-msvc@2.75.0':
+    resolution: {integrity: sha512-HbIXLbte8pzNX0XlbyRlRQA2+y8kfJ4O6XxB2VR2dE6q5LrNhG4fl0QRR/P9x8r3CNn9fw/25kk+WxULfbHu1w==}
     cpu: [arm64]
     os: [win32]
 
-  '@fallow-cli/win32-x64-msvc@2.67.0':
-    resolution: {integrity: sha512-nRMm9NVp0/vLeL/BLaY/DiU8uY6MAa6LTBO5qu3iNNRsDLf3Y2uQ8Tjb/gR337A/LlkfnapVHrqt9FPXvih6Kw==}
+  '@fallow-cli/win32-x64-msvc@2.75.0':
+    resolution: {integrity: sha512-h8W+qEOPvyolBQO2Y0H4/pz2XXw/1yHA8/XRPo3/tYRovmN2zoNjDrvaGjjodzFt6fBVLus+T0uo+U4pMgOu/w==}
     cpu: [x64]
     os: [win32]
 
@@ -1050,8 +1050,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@playwright/test@1.59.1':
-    resolution: {integrity: sha512-PG6q63nQg5c9rIi4/Z5lR5IVF7yU5MqmKaPOe0HSc0O2cX1fPi96sUQu5j7eo4gKCkB2AnNGoWt7y4/Xx3Kcqg==}
+  '@playwright/test@1.60.0':
+    resolution: {integrity: sha512-O71yZIbAh/PxDMNGns37GHBIfrVkEVyn+AXyIa5dOTfb4/xNvRWV+Vv/NMbNCtODB/pO7vLlF2OTmMVLhmr7Ag==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -1634,8 +1634,8 @@ packages:
     resolution: {integrity: sha512-CGnyrvbhPlWYMngksqrSSUT1BAVP49dZocrHuK0SvtR0D5TMs5wP0o3j7jexDJW01KSadjBp1M/71o/KR3nD1w==}
     engines: {node: '>=18'}
 
-  fallow@2.67.0:
-    resolution: {integrity: sha512-Nov3aHZZeilTYUtuC1N+qXUgPTpvqDtOOHa8lbbQzZWLnUxHSNcDp/xyoVHPIEiQxkkV8QIPHA99V+j47GjM0Q==}
+  fallow@2.75.0:
+    resolution: {integrity: sha512-0/2cquNI/cDLP/LzcCbkwI4hMzkX4tE0VY3/69n3PBBeqFpbM2oai+2Cb0sB8dXB8MDUGPVoPJjDW5GiUo7a1A==}
     engines: {node: '>=16'}
     hasBin: true
 
@@ -2241,13 +2241,13 @@ packages:
     resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
     engines: {node: '>=12'}
 
-  playwright-core@1.59.1:
-    resolution: {integrity: sha512-HBV/RJg81z5BiiZ9yPzIiClYV/QMsDCKUyogwH9p3MCP6IYjUFu/MActgYAvK0oWyV9NlwM3GLBjADyWgydVyg==}
+  playwright-core@1.60.0:
+    resolution: {integrity: sha512-9bW6zvX/m0lEbgTKJ6YppOKx8H3VOPBMOCFh2irXFOT4BbHgrx5hPjwJYLT40Lu+4qtD36qKc/Hn56StUW57IA==}
     engines: {node: '>=18'}
     hasBin: true
 
-  playwright@1.59.1:
-    resolution: {integrity: sha512-C8oWjPR3F81yljW9o5OxcWzfh6avkVwDD2VYdwIGqTkl+OGFISgypqzfu7dOe4QNLL2aqcWBmI3PMtLIK233lw==}
+  playwright@1.60.0:
+    resolution: {integrity: sha512-hheHdokM8cdqCb0lcE3s+zT4t4W+vvjpGxsZlDnikarzx8tSzMebh3UiFtgqwFwnTnjYQcsyMF8ei2mCO/tpeA==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -2853,10 +2853,10 @@ snapshots:
 
   '@asamuzakjp/nwsapi@2.3.9': {}
 
-  '@axe-core/playwright@4.11.3(playwright-core@1.59.1)':
+  '@axe-core/playwright@4.11.3(playwright-core@1.60.0)':
     dependencies:
       axe-core: 4.11.4
-      playwright-core: 1.59.1
+      playwright-core: 1.60.0
 
   '@babel/code-frame@7.29.0':
     dependencies:
@@ -3599,28 +3599,28 @@ snapshots:
 
   '@exodus/bytes@1.15.0': {}
 
-  '@fallow-cli/darwin-arm64@2.67.0':
+  '@fallow-cli/darwin-arm64@2.75.0':
     optional: true
 
-  '@fallow-cli/darwin-x64@2.67.0':
+  '@fallow-cli/darwin-x64@2.75.0':
     optional: true
 
-  '@fallow-cli/linux-arm64-gnu@2.67.0':
+  '@fallow-cli/linux-arm64-gnu@2.75.0':
     optional: true
 
-  '@fallow-cli/linux-arm64-musl@2.67.0':
+  '@fallow-cli/linux-arm64-musl@2.75.0':
     optional: true
 
-  '@fallow-cli/linux-x64-gnu@2.67.0':
+  '@fallow-cli/linux-x64-gnu@2.75.0':
     optional: true
 
-  '@fallow-cli/linux-x64-musl@2.67.0':
+  '@fallow-cli/linux-x64-musl@2.75.0':
     optional: true
 
-  '@fallow-cli/win32-arm64-msvc@2.67.0':
+  '@fallow-cli/win32-arm64-msvc@2.75.0':
     optional: true
 
-  '@fallow-cli/win32-x64-msvc@2.67.0':
+  '@fallow-cli/win32-x64-msvc@2.75.0':
     optional: true
 
   '@humanfs/core@0.19.2':
@@ -3806,9 +3806,9 @@ snapshots:
   '@oxlint/binding-win32-x64-msvc@1.63.0':
     optional: true
 
-  '@playwright/test@1.59.1':
+  '@playwright/test@1.60.0':
     dependencies:
-      playwright: 1.59.1
+      playwright: 1.60.0
 
   '@rolldown/binding-android-arm64@1.0.0-rc.18':
     optional: true
@@ -4460,18 +4460,18 @@ snapshots:
 
   fake-indexeddb@6.2.5: {}
 
-  fallow@2.67.0:
+  fallow@2.75.0:
     dependencies:
       detect-libc: 2.1.2
     optionalDependencies:
-      '@fallow-cli/darwin-arm64': 2.67.0
-      '@fallow-cli/darwin-x64': 2.67.0
-      '@fallow-cli/linux-arm64-gnu': 2.67.0
-      '@fallow-cli/linux-arm64-musl': 2.67.0
-      '@fallow-cli/linux-x64-gnu': 2.67.0
-      '@fallow-cli/linux-x64-musl': 2.67.0
-      '@fallow-cli/win32-arm64-msvc': 2.67.0
-      '@fallow-cli/win32-x64-msvc': 2.67.0
+      '@fallow-cli/darwin-arm64': 2.75.0
+      '@fallow-cli/darwin-x64': 2.75.0
+      '@fallow-cli/linux-arm64-gnu': 2.75.0
+      '@fallow-cli/linux-arm64-musl': 2.75.0
+      '@fallow-cli/linux-x64-gnu': 2.75.0
+      '@fallow-cli/linux-x64-musl': 2.75.0
+      '@fallow-cli/win32-arm64-msvc': 2.75.0
+      '@fallow-cli/win32-x64-msvc': 2.75.0
 
   fast-deep-equal@3.1.3: {}
 
@@ -5072,11 +5072,11 @@ snapshots:
 
   picomatch@4.0.4: {}
 
-  playwright-core@1.59.1: {}
+  playwright-core@1.60.0: {}
 
-  playwright@1.59.1:
+  playwright@1.60.0:
     dependencies:
-      playwright-core: 1.59.1
+      playwright-core: 1.60.0
     optionalDependencies:
       fsevents: 2.3.2
 

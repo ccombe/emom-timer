@@ -1,4 +1,1 @@
-# Ignore all generated fallow files except committed baselines
 *
-!.gitignore
-!regression-baseline.json
