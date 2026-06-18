@@ -32,32 +32,28 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",
-    "@playwright/test": "^1.60.0",
-    "@types/node": "^24.13.1",
-    "@vitest/coverage-v8": "^4.1.8",
+    "@playwright/test": "^1.61.0",
+    "@types/node": "^24.13.2",
+    "@vitest/coverage-v8": "^4.1.9",
     "eslint-plugin-playwright": "^2.10.4",
     "eslint-plugin-sonarjs": "^4.0.3",
     "eslint-plugin-testing-library": "^7.16.2",
     "fake-indexeddb": "^6.2.5",
-    "fallow": "^2.89.0",
+    "fallow": "^2.97.0",
     "idb": "^8.0.3",
     "jsdom": "^29.1.1",
     "oxfmt": "^0.51.0",
-    "oxlint": "^1.68.0",
+    "oxlint": "^1.70.0",
     "oxlint-tsgolint": "^0.23.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
     "vite-plugin-pwa": "^1.3.0",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.9",
+    "workbox-build": "^7.4.1",
+    "workbox-window": "^7.4.1"
   },
   "engines": {
     "node": ">=24.0.0"
   },
-  "packageManager": "pnpm@11.5.2+sha512.71c631e382066efc25625d5cf029075de07b61b37f6e27350fbd84b1bda5864c8c1967adc280776b45c30a715c0359a3be08fef42d5bb09e2b99029979692916",
-  "pnpm": {
-    "overrides": {
-      "rollup@>=4.0.0 <4.59.0": ">=4.59.0",
-      "vite-plugin-pwa > workbox-build > @rollup/plugin-terser > serialize-javascript": "^7.0.5"
-    }
-  }
+  "packageManager": "pnpm@11.7.0+sha512.19cc852c120c7125760f2443ee6be0ca5b40f9f50598de1a09a1f177503e010e57c23c77646e01e761de59bf874fb22a3398c33ab9691fc13eb946b6f0f4d620"
 }
