@@ -1,0 +1,78 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "vitest", "unicorn", "import", "promise", "node"],
+  "jsPlugins": [
+    "eslint-plugin-testing-library",
+    "eslint-plugin-playwright",
+    "eslint-plugin-sonarjs"
+  ],
+  "options": {
+    "typeAware": true
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.spec.ts"],
+      "rules": {
+        "typescript/no-explicit-any": "off",
+        "typescript/no-non-null-assertion": "off",
+        "typescript/no-floating-promises": "off",
+        "typescript/no-implied-eval": "off",
+        "typescript/unbound-method": "off",
+        "vitest/require-mock-type-parameters": "off",
+        "vitest/no-conditional-expect": "off",
+        "jest/no-conditional-expect": "off",
+
+      }
+    },
+    {
+      "files": ["tests/e2e/**/*.ts"],
+      "rules": {
+        "typescript/no-explicit-any": "off",
+        "typescript/no-non-null-assertion": "off",
+        "playwright/no-skipped-test": "warn",
+        "playwright/no-page-pause": "error",
+        "playwright/no-wait-for-timeout": "warn",
+        "playwright/no-conditional-in-test": "off"
+      }
+    }
+  ],
+  "rules": {
+    "no-console": "warn",
+    "no-debugger": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "prefer-template": "warn",
+    "prefer-spread": "warn",
+    "unicorn/prefer-modern-dom-apis": "warn",
+    "unicorn/prefer-includes": "warn",
+    "unicorn/prefer-string-starts-ends-with": "warn",
+    "typescript/no-explicit-any": "error",
+    "typescript/no-non-null-assertion": "error",
+    "import/no-cycle": "error",
+    "import/no-self-import": "error",
+    "promise/catch-or-return": "warn",
+    "promise/no-return-wrap": "warn",
+    "promise/param-names": "warn",
+    "sonarjs/cognitive-complexity": "warn",
+    "sonarjs/no-all-duplicated-branches": "error",
+    "sonarjs/no-collection-size-mischeck": "error",
+    "sonarjs/no-element-overwrite": "error",
+    "sonarjs/no-empty-collection": "error",
+    "sonarjs/no-extra-arguments": "error",
+    "sonarjs/no-gratuitous-expressions": "error",
+    "sonarjs/no-identical-conditions": "error",
+    "sonarjs/no-identical-expressions": "error",
+    "sonarjs/no-ignored-return": "warn",
+    "sonarjs/no-inverted-boolean-check": "warn",
+    "sonarjs/no-redundant-boolean": "warn",
+    "sonarjs/no-redundant-jump": "warn",
+    "sonarjs/no-same-line-conditional": "warn",
+    "sonarjs/no-use-of-empty-return-value": "error",
+    "sonarjs/no-useless-catch": "warn",
+    "sonarjs/prefer-while": "warn",
+    "testing-library/await-async-queries": "error",
+    "testing-library/prefer-screen-queries": "warn",
+    "testing-library/no-dom-import": "error",
+    "testing-library/no-await-sync-queries": "error"
+  }
+}

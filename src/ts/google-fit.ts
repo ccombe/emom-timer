@@ -5,9 +5,10 @@ import {
   GoogleFitBucket,
 } from "./types.ts";
 
-// Define strict constant scopes
 const SCOPES =
   "https://www.googleapis.com/auth/fitness.activity.write https://www.googleapis.com/auth/fitness.activity.read https://www.googleapis.com/auth/fitness.location.write";
+
+const VALID_ACTIVITY_TYPES = new Set([10, 15, 21, 97, 113, 114, 115]);
 
 // Extend Window interface for Google Identity Services
 declare global {
@@ -32,51 +33,76 @@ export class GoogleFitService {
   tokenExpiry: number;
 
   constructor() {
-    this.accessToken = localStorage.getItem("google_fit_token");
-    this.tokenExpiry = Number.parseInt(localStorage.getItem("google_fit_token_expiry") || "0");
+    this.accessToken = this.loadTokenFromStorage();
+    this.tokenExpiry = this.loadExpiryFromStorage();
 
-    // Check if token is expired
     if (this.accessToken && Date.now() > this.tokenExpiry) {
-      console.log("Token expired, clearing.");
-      this.accessToken = null;
-      this.tokenExpiry = 0;
-      localStorage.removeItem("google_fit_token");
-      localStorage.removeItem("google_fit_token_expiry");
+      this.clearToken();
     }
   }
 
-  initialize(): void {
-    if (!(globalThis as any).google) return; // GIS library not loaded
+  private loadTokenFromStorage(): string | null {
+    return localStorage.getItem("google_fit_token");
+  }
 
-    this.tokenClient = (globalThis as any).google.accounts.oauth2.initTokenClient({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-      scope: SCOPES,
-      callback: (tokenResponse: GoogleTokenResponse) => {
-        if (tokenResponse?.access_token) {
-          this.accessToken = tokenResponse.access_token;
-          // Token is usually valid for 3600s (1 hr)
-          this.tokenExpiry = Date.now() + tokenResponse.expires_in * 1000; // expires_in is seconds
+  private loadExpiryFromStorage(): number {
+    return Number.parseInt(localStorage.getItem("google_fit_token_expiry") || "0");
+  }
 
-          // Persist
-          localStorage.setItem("google_fit_token", this.accessToken);
-          localStorage.setItem("google_fit_token_expiry", this.tokenExpiry.toString());
+  private persistToken(token: string, expiry: number): void {
+    localStorage.setItem("google_fit_token", token);
+    localStorage.setItem("google_fit_token_expiry", expiry.toString());
+  }
 
-          // Dispatch custom event
-          const event = new CustomEvent("google-fit-connected");
-          document.dispatchEvent(event);
-        }
-      },
+  private clearToken(): void {
+    this.accessToken = null;
+    this.tokenExpiry = 0;
+    localStorage.removeItem("google_fit_token");
+    localStorage.removeItem("google_fit_token_expiry");
+  }
+
+  private getAuthHeaders(): Record<string, string> {
+    return {
+      Authorization: `Bearer ${this.accessToken}`,
+      "Content-Type": "application/json",
+    };
+  }
+
+  private apiFetch(url: string, method: string, body?: object): Promise<Response> {
+    return fetch(url, {
+      method,
+      headers: this.getAuthHeaders(),
+      body: body ? JSON.stringify(body) : undefined,
     });
+  }
+
+  private dispatchEvent(name: string): void {
+    document.dispatchEvent(new CustomEvent(name));
+  }
+
+  initialize(): void {
+    const gis =
+      globalThis.window === undefined ? undefined : globalThis.window.google;
+    if (gis) {
+      this.tokenClient = gis.accounts.oauth2.initTokenClient({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        scope: SCOPES,
+        callback: (tokenResponse: GoogleTokenResponse) => {
+          if (tokenResponse?.access_token) {
+            this.accessToken = tokenResponse.access_token;
+            this.tokenExpiry = Date.now() + tokenResponse.expires_in * 1000;
+
+            this.persistToken(this.accessToken, this.tokenExpiry);
+            this.dispatchEvent("google-fit-connected");
+          }
+        },
+      });
+    }
   }
 
   connect(): void {
     if (this.tokenClient) {
-      // If we have a valid token, we might not need to prompt, but requestAccessToken
-      // will prompt if needed or skip if consent exists.
-      // However, initTokenClient doesn't check validity on init.
       this.tokenClient.requestAccessToken();
-    } else {
-      console.error("Google Identity Services not initialized.");
     }
   }
 
@@ -84,26 +110,14 @@ export class GoogleFitService {
     return !!this.accessToken && Date.now() < this.tokenExpiry;
   }
 
-  async uploadSession(session: WorkoutSession): Promise<boolean> {
-    if (!this.accessToken) {
-      console.warn("No access token. Cannot upload to Google Fit.");
-      return false;
-    }
-
-    // session: { duration: seconds, startTime: millis, activityType: int, location: {lat, lng} }
-    const endTimeMillis = Date.now();
+  private buildSessionPayload(session: WorkoutSession, endTimeMillis: number) {
     const startTimeMillis = endTimeMillis - session.duration * 1000;
-
-    // Dataset IDs (nanoseconds)
-    // const minStartTimeNs = startTimeMillis * 1000000;
-    // const maxEndTimeNs = endTimeMillis * 1000000;
-
-    const sessionData = {
+    return {
       id: `emom-timer-${startTimeMillis}`,
       name: "EMOM Workout",
       description: "EMOM Timer Session",
-      startTimeMillis: startTimeMillis,
-      endTimeMillis: endTimeMillis,
+      startTimeMillis,
+      endTimeMillis,
       modifiedTimeMillis: endTimeMillis,
       application: {
         detailsUrl: "https://ccombe.github.io/emom-timer/",
@@ -112,48 +126,45 @@ export class GoogleFitService {
       },
       activityType: session.activityType || 114,
     };
+  }
+
+  private async uploadSessionMetadata(sessionData: object, sessionId: string): Promise<void> {
+    const response = await this.apiFetch(
+      `https://www.googleapis.com/fitness/v1/users/me/sessions/${sessionId}`,
+      "PUT",
+      sessionData,
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to upload session");
+    }
+  }
+
+  async uploadSession(session: WorkoutSession): Promise<boolean> {
+    if (!this.accessToken) {
+      return false;
+    }
+
+    const endTimeMillis = Date.now();
+    const sessionData = this.buildSessionPayload(session, endTimeMillis);
 
     try {
-      // Dispatch sync start
-      document.dispatchEvent(new CustomEvent("google-fit-sync-start"));
+      this.dispatchEvent("google-fit-sync-start");
+      await this.uploadSessionMetadata(sessionData, sessionData.id);
 
-      // 1. Upload Session Metadata
-      const response = await fetch(
-        `https://www.googleapis.com/fitness/v1/users/me/sessions/${sessionData.id}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(sessionData),
-        },
-      );
-
-      if (!response.ok) {
-        const err = await response.json();
-        console.error("Google Fit Session Upload Error:", err);
-        throw new Error("Failed to upload session");
-      }
-
-      // 2. Upload Location (if available)
       if (session.location) {
         await this.uploadLocationSample(
-          startTimeMillis,
+          sessionData.startTimeMillis,
           endTimeMillis,
           session.location.lat,
           session.location.lng,
         );
       }
 
-      console.log("Workout uploaded to Google Fit!");
-      // Dispatch sync success
-      document.dispatchEvent(new CustomEvent("google-fit-sync-success"));
+      this.dispatchEvent("google-fit-sync-success");
       return true;
-    } catch (error) {
-      console.error(error);
-      // Dispatch sync error
-      document.dispatchEvent(new CustomEvent("google-fit-sync-error"));
+    } catch {
+      this.dispatchEvent("google-fit-sync-error");
       return false;
     }
   }
@@ -164,14 +175,7 @@ export class GoogleFitService {
     lat: number,
     lng: number,
   ): Promise<void> {
-    // Create a derived data source for location if possible, or use raw
-    // For simplicity, we create a specialized data source for this app
     const dataSourceId = "raw:com.google.location.sample:com.ccombe.emomtimer:LocationSource";
-
-    // Format: raw:dataType:packageName:streamName
-
-    // We'll try to PATCH the dataset directly.
-    // Dataset ID: startTime-endTime (nanoseconds)
     const datasetId = `${startTimeMillis * 1000000}-${endTimeMillis * 1000000}`;
     const url = `https://www.googleapis.com/fitness/v1/users/me/dataSources/${dataSourceId}/datasets/${datasetId}`;
 
@@ -185,27 +189,19 @@ export class GoogleFitService {
           endTimeNanos: endTimeMillis * 1000000,
           dataTypeName: "com.google.location.sample",
           value: [
-            { fpVal: lat, mapVal: [] }, // latitude
-            { fpVal: lng, mapVal: [] }, // longitude
-            { fpVal: 10, mapVal: [] }, // accuracy (meters) - mock value
-            { fpVal: 0, mapVal: [] }, // altitude (meters) - mock value
+            { fpVal: lat, mapVal: [] },
+            { fpVal: lng, mapVal: [] },
+            { fpVal: 10, mapVal: [] },
+            { fpVal: 0, mapVal: [] },
           ],
         },
       ],
     };
 
     try {
-      await fetch(url, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-      console.log("Location stored.");
-    } catch (e) {
-      console.error("Failed to store location", e);
+      await this.apiFetch(url, "PATCH", body);
+    } catch {
+      // Location is optional; silently fail
     }
   }
 
@@ -216,18 +212,16 @@ export class GoogleFitService {
           dataTypeName: "com.google.activity.segment",
         },
       ],
-      bucketByTime: { durationMillis: 86400000 }, // 1 day
+      bucketByTime: { durationMillis: 86400000 },
       startTimeMillis: startTime,
       endTimeMillis: endTime,
     };
   }
 
   private containsWorkout(points: { value: { intVal: number }[] }[]): boolean {
-    // Activity types used by this app (from index.html activity-type-select)
-    const validActivityTypes = new Set([10, 15, 21, 97, 113, 114, 115]);
     return points.some((p) => {
       const intVal = p.value?.[0]?.intVal;
-      return intVal !== undefined && validActivityTypes.has(intVal);
+      return intVal !== undefined && VALID_ACTIVITY_TYPES.has(intVal);
     });
   }
 
@@ -237,15 +231,23 @@ export class GoogleFitService {
 
   private processBuckets(buckets: GoogleFitBucket[]): number[] {
     const activeDates: number[] = [];
-    buckets.forEach((bucket) => {
-      if (this.hasValidDataPoints(bucket)) {
-        const points = bucket.dataset[0].point;
-        if (this.containsWorkout(points)) {
-          activeDates.push(Number.parseInt(bucket.startTimeMillis));
-        }
+    for (const bucket of buckets) {
+      if (this.hasValidDataPoints(bucket) && this.containsWorkout(bucket.dataset[0].point)) {
+        activeDates.push(Number.parseInt(bucket.startTimeMillis));
       }
-    });
+    }
     return activeDates;
+  }
+
+  private async fetchAggregateData(startTime: number, endTime: number): Promise<GoogleFitAggregateResponse | null> {
+    const response = await this.apiFetch(
+      "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
+      "POST",
+      this.createAggregateRequestBody(startTime, endTime),
+    );
+
+    if (!response.ok) return null;
+    return response.json();
   }
 
   async fetchWorkoutHistory(days: number = 60): Promise<number[]> {
@@ -254,31 +256,11 @@ export class GoogleFitService {
     const endTime = Date.now();
     const startTime = endTime - days * 24 * 60 * 60 * 1000;
 
-    const body = this.createAggregateRequestBody(startTime, endTime);
-
     try {
-      const response = await fetch(
-        "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        },
-      );
-
-      if (!response.ok) return [];
-
-      const data: GoogleFitAggregateResponse = await response.json();
-
-      if (data.bucket) {
-        return this.processBuckets(data.bucket);
-      }
-      return [];
-    } catch (e) {
-      console.error("Error fetching history", e);
+      const data = await this.fetchAggregateData(startTime, endTime);
+      if (!data?.bucket) return [];
+      return this.processBuckets(data.bucket);
+    } catch {
       return [];
     }
   }
