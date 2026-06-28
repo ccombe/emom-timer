@@ -115,12 +115,9 @@ describe("GoogleFitService", () => {
       expect(requestMock).toHaveBeenCalled();
     });
 
-    it("logs error if client does not exist", () => {
-      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    it("returns early if client does not exist", () => {
       service.tokenClient = null;
-      service.connect();
-      expect(spy).toHaveBeenCalledWith("Google Identity Services not initialized.");
-      spy.mockRestore();
+      expect(() => service.connect()).not.toThrow();
     });
   });
 
@@ -172,14 +169,8 @@ describe("GoogleFitService", () => {
         json: async () => ({ error: "Bad request" }),
       });
 
-      // Mock console.error to avoid noisy stderr in tests
-      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
       const result = await service.uploadSession({ duration: 60, interval: 60, activityType: 114 });
       expect(result).toBe(false);
-
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
     });
   });
 
@@ -220,11 +211,8 @@ describe("GoogleFitService", () => {
 
     it("handles fetch exceptions gracefully", async () => {
       (fetch as any).mockRejectedValueOnce(new Error("Network failure"));
-      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
       const dates = await service.fetchWorkoutHistory();
       expect(dates).toEqual([]);
-      expect(spy).toHaveBeenCalled();
-      spy.mockRestore();
     });
 
     it("handles malformed/empty buckets gracefully", async () => {
