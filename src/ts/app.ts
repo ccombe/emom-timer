@@ -1,5 +1,5 @@
 // --- Imports ---
-import { calculateStreak, normalizeConfig } from "./logic.ts";
+import { calculateStreak, normalizeConfig, getBeepFrequency } from "./logic.ts";
 import { StorageService } from "./storage.ts";
 import { googleFit } from "./google-fit.ts";
 import { TimerConfig, TimerState, TimerMode } from "./types.ts";
@@ -15,7 +15,7 @@ const ui = new UIManager();
 const mediaSession = new MediaSessionAdapter();
 
 // --- Configuration ---
-let CONFIG: TimerConfig = {
+const CONFIG: TimerConfig = {
   mode: "emom",
   intervalCount: 5,
   intervalSecs: 60,
@@ -48,7 +48,7 @@ const callbacks: TimerCallbacks = {
     audio.releaseLockScreenAudio();
     audio.playEndSound();
     ui.triggerVictoryVisuals();
-    saveWorkout();
+    void saveWorkout();
   },
 };
 
@@ -58,7 +58,7 @@ const engine = new TimerEngine(CONFIG, callbacks);
 document.addEventListener("google-fit-connected", () => {
   ui.setFitConnectedState(); // Update button text and status
   // Refresh Streak with Cloud Data
-  updateStreak();
+  void updateStreak();
 });
 document.addEventListener("google-fit-sync-success", () => {
   ui.updateFitUI("connected");
@@ -71,24 +71,24 @@ document.addEventListener("google-fit-sync-error", () => {
 
 // --- Actions ---
 
-function tryAcquireLocation() {
-  if (!googleFit.isConnected() || !CONFIG.includeLocation) {
-    return;
-  }
+function canAcquireLocation(): boolean {
+  const wantsLocation = googleFit.isConnected() && CONFIG.includeLocation;
+  const geoReady = Boolean(navigator.geolocation) && !engine.state.location;
+  return wantsLocation && geoReady;
+}
 
-  if (!navigator.geolocation || engine.state.location) {
-    return;
-  }
+function onGeolocationSuccess(pos: GeolocationPosition): void {
+  engine.setLocation({
+    lat: pos.coords.latitude,
+    lng: pos.coords.longitude,
+  });
+}
 
+function tryAcquireLocation(): void {
+  if (!canAcquireLocation()) return;
   navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      engine.setLocation({
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-      });
-      console.log("Location acquired.");
-    },
-    (err) => console.warn("Location denied/error", err),
+    onGeolocationSuccess,
+    () => {},
     { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 },
   );
 }
@@ -96,17 +96,13 @@ function tryAcquireLocation() {
 function runCountdownSequence(startCount: number, onComplete: () => void) {
   let count = startCount;
   ui.showCountdown(count);
-  audio.playCountdownBeep(440); // 3 (Low)
+  audio.playCountdownBeep(getBeepFrequency(count));
 
   const countdownInterval = setInterval(() => {
     count--;
     if (count > 0) {
       ui.showCountdown(count);
-      // Beep pitch up
-      let freq = 440;
-      if (count === 2) freq = 554;
-      if (count === 1) freq = 659;
-      audio.playCountdownBeep(freq);
+      audio.playCountdownBeep(getBeepFrequency(count));
     } else {
       clearInterval(countdownInterval);
       onComplete();
@@ -156,43 +152,43 @@ function resetTimer() {
 
 // --- Data Persistence ---
 
-async function saveWorkout() {
-  await storage.saveSession({
+function buildWorkoutSession() {
+  return {
     duration: CONFIG.totalDurationSecs,
     interval: CONFIG.intervalSecs,
     activityType: CONFIG.activityType || 115,
     location: engine.state.location,
-  });
-  updateStreak();
+  };
+}
 
-  // Sync if connected
+async function saveWorkout() {
+  await storage.saveSession(buildWorkoutSession());
+  void updateStreak();
+
   if (googleFit.isConnected()) {
-    googleFit.uploadSession({
-      duration: CONFIG.totalDurationSecs,
-      activityType: CONFIG.activityType || 115,
-      interval: CONFIG.intervalSecs,
-      location: engine.state.location,
-    });
+    void googleFit.uploadSession(buildWorkoutSession());
   }
 }
 
-async function updateStreak() {
-  const localStreak = await storage.getStreak();
-  let displayStreak = localStreak;
+async function fetchConnectedCloudStreak(localStreak: number): Promise<number> {
+  const historyDates = await googleFit.fetchWorkoutHistory();
+  if (!historyDates?.length) return localStreak;
+  const cloudStreak = calculateStreak(historyDates.map((ts) => new Date(ts)));
+  return Math.max(localStreak, cloudStreak);
+}
 
-  // Check Cloud Streak if connected
-  if (googleFit.isConnected()) {
-    try {
-      const historyDates = await googleFit.fetchWorkoutHistory();
-      if (historyDates?.length > 0) {
-        const dateObjects = historyDates.map((ts) => new Date(ts));
-        const cloudStreak = calculateStreak(dateObjects);
-        displayStreak = Math.max(localStreak, cloudStreak);
-      }
-    } catch (e) {
-      console.warn("Retaining local streak due to fetch error", e);
-    }
+async function mergeCloudStreak(localStreak: number): Promise<number> {
+  if (!googleFit.isConnected()) return localStreak;
+  try {
+    return await fetchConnectedCloudStreak(localStreak);
+  } catch {
+    return localStreak;
   }
+}
+
+async function updateStreak(): Promise<void> {
+  const localStreak = await storage.getStreak();
+  const displayStreak = await mergeCloudStreak(localStreak);
   ui.updateStreak(displayStreak);
 }
 
@@ -219,7 +215,6 @@ ui.settingsToggle.addEventListener("click", () => {
 
 ui.closeSettingsBtn.addEventListener("click", () => {
   ui.hideSettings();
-  console.log("Applying settings...");
   audio.ensureAudioContext();
   applySettings();
 });
@@ -249,35 +244,56 @@ function getDefaultFartlekPhases() {
   ];
 }
 
-function applySettings() {
-  const modeVal = ui.timerModeSelect ? (ui.timerModeSelect.value as TimerMode) : "emom";
-  const customPhases = CONFIG.phases?.length ? CONFIG.phases : getDefaultFartlekPhases();
+type SettingsFormSnapshot = {
+  mode: TimerMode;
+  phases?: TimerConfig["phases"];
+  intervalCount: number;
+  intervalSecs: number;
+  activityType: number;
+  includeLocation: boolean;
+};
 
-  const newSettings = {
-    mode: modeVal,
-    phases: modeVal === "fartlek" ? customPhases : undefined,
+function readTimerModeFromUi(): TimerMode {
+  return ui.timerModeSelect.value as TimerMode;
+}
+
+function fartlekPhasesForMode(mode: TimerMode): TimerConfig["phases"] | undefined {
+  if (mode !== "fartlek") return undefined;
+  return CONFIG.phases?.length ? CONFIG.phases : getDefaultFartlekPhases();
+}
+
+function readIntervalFieldsFromDom(): Pick<
+  SettingsFormSnapshot,
+  "intervalCount" | "intervalSecs" | "activityType" | "includeLocation"
+> {
+  return {
     intervalCount: Number.parseInt(ui.intervalCountInput.value) || 1,
     intervalSecs: Number.parseInt(ui.intervalDurationSelect.value),
     activityType: Number.parseInt(ui.activityTypeSelect.value) || 115,
     includeLocation: ui.locationToggle.checked,
   };
+}
 
+function readSettingsFormSnapshot(): SettingsFormSnapshot {
+  const modeVal = readTimerModeFromUi();
+  return {
+    mode: modeVal,
+    phases: fartlekPhasesForMode(modeVal),
+    ...readIntervalFieldsFromDom(),
+  };
+}
+
+function applySettings(): void {
+  const newSettings = readSettingsFormSnapshot();
   const oldIncludeLocation = CONFIG.includeLocation;
-  const oldMode = CONFIG.mode; // Capture BEFORE saveAndApplyConfig mutates it
+  const oldMode = CONFIG.mode;
   saveAndApplyConfig(newSettings);
   handleLocationUpdate(newSettings.includeLocation, oldIncludeLocation);
   handleTimerUpdate(newSettings.intervalCount, newSettings.intervalSecs, newSettings.mode, oldMode);
 }
 
-function saveAndApplyConfig(settings: {
-  mode: TimerMode;
-  phases?: any[];
-  intervalCount: number;
-  intervalSecs: number;
-  activityType: number;
-  includeLocation: boolean;
-}) {
-  storage.saveSettings({ ...settings, setupComplete: true });
+function saveAndApplyConfig(settings: SettingsFormSnapshot): void {
+  void storage.saveSettings({ ...settings, setupComplete: true });
 
   CONFIG.mode = settings.mode;
   if (settings.phases) CONFIG.phases = settings.phases;
@@ -293,23 +309,38 @@ function handleLocationUpdate(newIncludeLocation: boolean, oldIncludeLocation: b
   }
 }
 
-function handleTimerUpdate(newIntervalCount: number, newIntervalSecs: number, newMode: TimerMode, oldMode: TimerMode) {
-  const timerParamsChanged =
-    newIntervalCount !== CONFIG.intervalCount || newIntervalSecs !== CONFIG.intervalSecs || newMode !== oldMode;
+function timerDurationShapeChanged(
+  newIntervalCount: number,
+  newIntervalSecs: number,
+  newMode: TimerMode,
+  oldMode: TimerMode,
+): boolean {
+  return (
+    newIntervalCount !== CONFIG.intervalCount ||
+    newIntervalSecs !== CONFIG.intervalSecs ||
+    newMode !== oldMode
+  );
+}
 
-  if (timerParamsChanged) {
-    CONFIG.intervalCount = newIntervalCount;
-    CONFIG.intervalSecs = newIntervalSecs;
+function applyIntervalConfig(count: number, secs: number): void {
+  CONFIG.intervalCount = count;
+  CONFIG.intervalSecs = secs;
+}
+
+function handleTimerUpdate(
+  newIntervalCount: number,
+  newIntervalSecs: number,
+  newMode: TimerMode,
+  oldMode: TimerMode,
+): void {
+  const shapeChanged = timerDurationShapeChanged(newIntervalCount, newIntervalSecs, newMode, oldMode);
+  applyIntervalConfig(newIntervalCount, newIntervalSecs);
+  if (shapeChanged) {
     resetTimer();
-  } else {
-    // Just update config for non-timer-structural changes
-    CONFIG.intervalCount = newIntervalCount;
-    CONFIG.intervalSecs = newIntervalSecs;
-
-    // Refresh display if not running to ensure fresh state visibility
-    if (!engine.state.isRunning) {
-      ui.updateDisplay(engine.state, CONFIG);
-    }
+    return;
+  }
+  if (!engine.state.isRunning) {
+    ui.updateDisplay(engine.state, CONFIG);
   }
 }
 

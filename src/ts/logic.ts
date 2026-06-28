@@ -2,23 +2,31 @@
 
 import { TimerConfig } from "./types.ts";
 
-export interface TimerLogicState {
+interface TimerLogicState {
   elapsed: number;
   totalDuration?: number;
   intervalDuration?: number;
 }
 
+const SECONDS_PER_MINUTE = 60;
+const FINISH_TOLERANCE = 0.05;
+const DEFAULT_BEEP_FREQUENCY = 440;
+const BEEP_HIGH = 554;
+const BEEP_HIGHER = 659;
+const DEFAULT_ACTIVITY_TYPE = 115;
+const DEFAULT_MODE = "emom";
+const DEFAULT_INTERVAL_COUNT = 5;
+
 export function calculateDisplayTime(elapsed: number, interval: number): number {
   const currentIntervalElapsed = elapsed % interval;
-  // Always countdown
   return Math.max(0, interval - currentIntervalElapsed);
 }
 
 export function formatTime(seconds: number): string {
-  const m: string = Math.floor(seconds / 60)
+  const m = Math.floor(seconds / SECONDS_PER_MINUTE)
     .toString()
     .padStart(2, "0");
-  const s: string = Math.floor(seconds % 60)
+  const s = Math.floor(seconds % SECONDS_PER_MINUTE)
     .toString()
     .padStart(2, "0");
   return `${m}:${s}`;
@@ -33,11 +41,10 @@ export function calculateTotalProgress(state: TimerLogicState): number {
 export function calculateIntervalProgress(state: TimerLogicState): number {
   const { elapsed, intervalDuration } = state;
   if (!intervalDuration || intervalDuration <= 0) return 0;
-  const currentIntervalSec: number = elapsed % intervalDuration;
-  return currentIntervalSec / intervalDuration;
+  return (elapsed % intervalDuration) / intervalDuration;
 }
 
-export interface RoundInfo {
+interface RoundInfo {
   current: number;
   total: number;
 }
@@ -45,50 +52,50 @@ export interface RoundInfo {
 export function getCurrentRound(state: Required<TimerLogicState>): RoundInfo {
   const { elapsed, intervalDuration, totalDuration } = state;
   if (intervalDuration <= 0) return { current: 0, total: 0 };
-  const totalRounds: number = Math.floor(totalDuration / intervalDuration);
-  let currentRound: number = Math.floor(elapsed / intervalDuration) + 1;
-  if (currentRound > totalRounds) currentRound = totalRounds;
+  const totalRounds = Math.floor(totalDuration / intervalDuration);
+  const currentRound = Math.min(
+    Math.floor(elapsed / intervalDuration) + 1,
+    totalRounds,
+  );
   return { current: currentRound, total: totalRounds };
 }
 
-// Use a small tolerance for float comparison
 export function isFinished(elapsed: number, totalDuration: number): boolean {
-  return elapsed >= totalDuration - 0.05;
+  return elapsed >= totalDuration - FINISH_TOLERANCE;
 }
 
 export type BeepCheck =
   | { shouldBeep: false }
   | { shouldBeep: true; frequency: number; type: "countdown" | "complete"; newBeepId: string };
 
-export interface BeepContext {
+interface BeepContext {
   elapsed: number;
   intervalDuration: number;
   lastBeepId?: string | number;
 }
 
 export function getBeepFrequency(secondsRemainingInt: number): number {
-  if (secondsRemainingInt === 2) return 554;
-  if (secondsRemainingInt === 1) return 659;
-  return 440;
+  if (secondsRemainingInt === 2) return BEEP_HIGH;
+  if (secondsRemainingInt === 1) return BEEP_HIGHER;
+  return DEFAULT_BEEP_FREQUENCY;
 }
 
 export function getCountdownBeep(context: BeepContext): BeepCheck {
   const { elapsed, intervalDuration, lastBeepId } = context;
-  const currentIntervalElapsed: number = elapsed % intervalDuration;
-  const currentIntervalRemaining: number = intervalDuration - currentIntervalElapsed;
-  const secondsRemainingInt: number = Math.ceil(currentIntervalRemaining);
+  const currentIntervalRemaining = intervalDuration - (elapsed % intervalDuration);
+  const secondsRemainingInt = Math.ceil(currentIntervalRemaining);
 
-  // Logic: Beep at 3, 2, 1
-  if (secondsRemainingInt <= 3 && secondsRemainingInt > 0) {
-    // Prevent beep on very first start (elapsed 0) if necessary,
-    // but typically 0 elapsed means Duration remaining, so we are safe.
-    // Needs a unique ID to prevent double triggers per second
-    const currentRound: number = Math.floor(elapsed / intervalDuration);
+  if (secondsRemainingInt > 0 && secondsRemainingInt <= 3) {
+    const currentRound = Math.floor(elapsed / intervalDuration);
     const beepId = `${currentRound}-${secondsRemainingInt}`;
 
     if (lastBeepId !== beepId) {
-      const freq = getBeepFrequency(secondsRemainingInt);
-      return { shouldBeep: true, frequency: freq, type: "countdown", newBeepId: beepId };
+      return {
+        shouldBeep: true,
+        frequency: getBeepFrequency(secondsRemainingInt),
+        type: "countdown",
+        newBeepId: beepId,
+      };
     }
   }
 
@@ -101,11 +108,23 @@ export function normalizeDate(date: Date): number {
   return normalized.getTime();
 }
 
-export function calculateStreak(dates: Date[]): number {
-  if (!dates || dates.length === 0) return 0;
+function countConsecutiveDays(startDate: Date, uniqueDates: Set<number>): number {
+  let streak = 0;
+  const check = new Date(startDate);
 
-  // Sort by date descending
+  while (uniqueDates.has(normalizeDate(check))) {
+    streak++;
+    check.setDate(check.getDate() - 1);
+  }
+
+  return streak;
+}
+
+export function calculateStreak(dates: Date[]): number {
+  if (!dates?.length) return 0;
+
   const sortedDates = [...dates].sort((a, b) => b.getTime() - a.getTime());
+  const uniqueDates = new Set(sortedDates.map(normalizeDate));
 
   const today = new Date();
   const todayTime = normalizeDate(today);
@@ -114,43 +133,61 @@ export function calculateStreak(dates: Date[]): number {
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayTime = normalizeDate(yesterday);
 
-  // Normalize dates to midnight timestamps
-  const uniqueDates = new Set(sortedDates.map(normalizeDate));
-
   if (!uniqueDates.has(todayTime) && !uniqueDates.has(yesterdayTime)) {
     return 0;
   }
 
-  let streak = 0;
-  let currentCheck = uniqueDates.has(todayTime) ? today : yesterday;
-
-  while (uniqueDates.has(normalizeDate(currentCheck))) {
-    streak++;
-    currentCheck.setDate(currentCheck.getDate() - 1);
-  }
-
-  return streak;
+  const startDate = uniqueDates.has(todayTime) ? today : yesterday;
+  return countConsecutiveDays(startDate, uniqueDates);
 }
 
-export function determineIntervalCount(settings: any, defaults: TimerConfig): number {
-  if (settings.intervalCount) {
-    return settings.intervalCount;
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function pickMode(raw: unknown, fallback: TimerConfig["mode"]): TimerConfig["mode"] {
+  return raw === "fartlek" || raw === "emom" ? raw : fallback || DEFAULT_MODE;
+}
+
+function pickNumber(raw: unknown, fallback: number, min?: number): number {
+  if (typeof raw !== "number") return fallback;
+  if (min !== undefined && raw <= min) return fallback;
+  return raw;
+}
+
+function pickBool(raw: unknown): boolean {
+  return Boolean(raw);
+}
+
+function calculateIntervalCountFromDuration(
+  totalDurationSecs: number,
+  intervalSecs: number,
+): number {
+  return Math.floor(totalDurationSecs / intervalSecs) || DEFAULT_INTERVAL_COUNT;
+}
+
+function determineIntervalCount(settings: Record<string, unknown>, defaults: TimerConfig): number {
+  const intervalCount = settings.intervalCount;
+  if (typeof intervalCount === "number" && intervalCount > 0) {
+    return intervalCount;
   }
-  if ("totalDurationSecs" in settings) {
-    const legacy = settings as { totalDurationSecs: number };
-    const intervalSecs = settings.intervalSecs || defaults.intervalSecs;
-    return Math.floor(legacy.totalDurationSecs / intervalSecs) || 5;
+
+  const totalDurationSecs = settings.totalDurationSecs;
+  if (typeof totalDurationSecs === "number") {
+    const intervalSecs = pickNumber(settings.intervalSecs, defaults.intervalSecs);
+    return calculateIntervalCountFromDuration(totalDurationSecs, intervalSecs);
   }
+
   return defaults.intervalCount;
 }
 
 export function normalizeConfig(
-  settings: any,
+  settings: unknown,
   defaults: TimerConfig,
 ): Omit<TimerConfig, "totalDurationSecs"> {
-  if (!settings) {
+  if (!settings || !isPlainObject(settings)) {
     return {
-      mode: defaults.mode || "emom",
+      mode: defaults.mode || DEFAULT_MODE,
       intervalCount: defaults.intervalCount,
       intervalSecs: defaults.intervalSecs,
       activityType: defaults.activityType,
@@ -158,11 +195,13 @@ export function normalizeConfig(
     };
   }
 
+  const intervalSecs = pickNumber(settings.intervalSecs, defaults.intervalSecs);
+
   return {
-    mode: settings.mode || defaults.mode || "emom",
+    mode: pickMode(settings.mode, defaults.mode),
     intervalCount: determineIntervalCount(settings, defaults),
-    intervalSecs: settings.intervalSecs || defaults.intervalSecs,
-    activityType: settings.activityType || 115, // Default to Kettlebell if missing/zero
-    includeLocation: !!settings.includeLocation,
+    intervalSecs,
+    activityType: pickNumber(settings.activityType, DEFAULT_ACTIVITY_TYPE, 0),
+    includeLocation: pickBool(settings.includeLocation),
   };
 }

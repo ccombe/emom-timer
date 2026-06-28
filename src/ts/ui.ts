@@ -6,131 +6,172 @@ import {
   isFinished,
 } from "./logic.ts";
 
+function queryById<T extends Element>(
+  id: string,
+  ctor: abstract new (...args: unknown[]) => T,
+): T {
+  const el = document.getElementById(id);
+  if (!el) {
+    throw new Error(`Missing required element #${id}`);
+  }
+  if (!(el instanceof ctor)) {
+    throw new Error(`Element #${id} is not a ${ctor.name}`);
+  }
+  return el;
+}
+
+type DocumentWithViewTransition = Document & {
+  startViewTransition?: (callback: () => void) => { finished: Promise<void> };
+};
+
+const TOAST_ICONS: Record<string, string> = {
+  success: "\u2705",
+  error: "\u274c",
+  info: "\u2139\ufe0f",
+};
+
+const MS = {
+  TOAST_FADE: 200,
+  TOAST_DEFAULT: 3000,
+  VICTORY_BUTTON_DELAY: 2000,
+  PULSE_DURATION: 500,
+};
+
 export class UIManager {
-  // Buttons & Inputs
-  public readonly startBtn: HTMLButtonElement;
-  public readonly resetBtn: HTMLButtonElement;
-  public readonly settingsToggle: HTMLButtonElement;
-  public readonly closeSettingsBtn: HTMLButtonElement;
-  public readonly connectFitBtn: HTMLButtonElement;
+  public startBtn: HTMLButtonElement;
+  public resetBtn: HTMLButtonElement;
+  public settingsToggle: HTMLButtonElement;
+  public closeSettingsBtn: HTMLButtonElement;
+  public connectFitBtn: HTMLButtonElement;
 
-  public readonly timerModeSelect: HTMLSelectElement;
-  public readonly intervalCountInput: HTMLInputElement;
-  public readonly intervalDurationSelect: HTMLSelectElement;
-  public readonly activityTypeSelect: HTMLSelectElement;
-  public readonly locationToggle: HTMLInputElement;
+  public timerModeSelect: HTMLSelectElement;
+  public intervalCountInput: HTMLInputElement;
+  public intervalDurationSelect: HTMLSelectElement;
+  public activityTypeSelect: HTMLSelectElement;
+  public locationToggle: HTMLInputElement;
 
-  private readonly timerDisplay: HTMLElement;
-  private readonly intervalDisplay: HTMLElement;
-  private readonly streakDisplay: HTMLElement;
-  private readonly totalRing: SVGCircleElement;
-  private readonly intervalRing: SVGCircleElement;
-  private readonly trophyOverlay: HTMLElement;
-  private readonly settingsPanel: HTMLElement;
+  private timerDisplay: HTMLElement;
+  private intervalDisplay: HTMLElement;
+  private streakDisplay: HTMLElement;
+  private totalRing: SVGCircleElement;
+  private intervalRing: SVGCircleElement;
+  private trophyOverlay: HTMLElement;
+  private settingsPanel: HTMLElement;
 
-  private readonly fitStatus: HTMLElement;
-  private readonly fitIcon: HTMLElement;
-  private readonly toastContainer: HTMLElement;
-  private readonly trophyContinueBtn: HTMLButtonElement;
+  private fitStatus: HTMLElement;
+  private fitIcon: HTMLElement;
+  private toastContainer: HTMLElement;
+  private trophyContinueBtn: HTMLButtonElement;
 
-  // SVG Constants
   private readonly TOTAL_CIRCUMFERENCE: number = 2 * Math.PI * 40;
   private readonly INTERVAL_CIRCUMFERENCE: number = 2 * Math.PI * 70;
 
   constructor() {
-    this.timerDisplay = document.getElementById("timer-display")!;
-    this.intervalDisplay = document.getElementById("interval-display")!;
-    this.streakDisplay = document.getElementById("streak-display")!;
+    this.timerDisplay = queryById("timer-display", HTMLElement);
+    this.intervalDisplay = queryById("interval-display", HTMLElement);
+    this.streakDisplay = queryById("streak-display", HTMLElement);
+    this.totalRing = queryById("total-ring-fg", SVGCircleElement);
+    this.intervalRing = queryById("interval-ring-fg", SVGCircleElement);
 
-    this.totalRing = document.getElementById("total-ring-fg") as unknown as SVGCircleElement;
-    this.intervalRing = document.getElementById("interval-ring-fg") as unknown as SVGCircleElement;
+    this.startBtn = queryById("start-btn", HTMLButtonElement);
+    this.resetBtn = queryById("reset-btn", HTMLButtonElement);
+    this.trophyOverlay = queryById("trophy-overlay", HTMLElement);
+    this.trophyContinueBtn = queryById("trophy-continue-btn", HTMLButtonElement);
 
-    this.startBtn = document.getElementById("start-btn") as HTMLButtonElement;
-    this.resetBtn = document.getElementById("reset-btn") as HTMLButtonElement;
-    this.trophyOverlay = document.getElementById("trophy-overlay")!;
+    this.settingsToggle = queryById("settings-toggle", HTMLButtonElement);
+    this.settingsPanel = queryById("settings-panel", HTMLElement);
+    this.closeSettingsBtn = queryById("close-settings-btn", HTMLButtonElement);
+    this.timerModeSelect = queryById("timer-mode-select", HTMLSelectElement);
+    this.intervalCountInput = queryById("interval-count-input", HTMLInputElement);
+    this.intervalDurationSelect = queryById("interval-duration-select", HTMLSelectElement);
+    this.activityTypeSelect = queryById("activity-type-select", HTMLSelectElement);
+    this.locationToggle = queryById("location-toggle", HTMLInputElement);
 
-    // Settings
-    this.settingsToggle = document.getElementById("settings-toggle") as HTMLButtonElement;
-    this.settingsPanel = document.getElementById("settings-panel")!;
-    this.closeSettingsBtn = document.getElementById("close-settings-btn") as HTMLButtonElement;
-
-    this.timerModeSelect = document.getElementById("timer-mode-select") as HTMLSelectElement;
-    this.intervalCountInput = document.getElementById("interval-count-input") as HTMLInputElement;
-    this.intervalDurationSelect = document.getElementById(
-      "interval-duration-select",
-    ) as HTMLSelectElement;
-    this.activityTypeSelect = document.getElementById("activity-type-select") as HTMLSelectElement;
-    this.locationToggle = document.getElementById("location-toggle") as HTMLInputElement;
-
-    this.connectFitBtn = document.getElementById("connect-google-fit-btn") as HTMLButtonElement;
-    this.fitStatus = document.getElementById("google-fit-status")!;
-    this.fitIcon = document.getElementById("fit-status-icon")!;
-    this.toastContainer = document.getElementById("toast-container")!;
-    this.trophyContinueBtn = document.getElementById("trophy-continue-btn") as HTMLButtonElement;
+    this.connectFitBtn = queryById("connect-google-fit-btn", HTMLButtonElement);
+    this.fitStatus = queryById("google-fit-status", HTMLElement);
+    this.fitIcon = queryById("fit-status-icon", HTMLElement);
+    this.toastContainer = queryById("toast-container", HTMLElement);
   }
 
   public updateDisplay(state: TimerState, config: TimerConfig): void {
     const totalElapsed = state.currentTotalElapsed;
+    const phaseElapsed = state.currentPhaseElapsed ?? (totalElapsed % config.intervalSecs);
+    const phaseDuration = state.currentPhaseDuration ?? config.intervalSecs;
 
-    // Total Progress
+    this.updateProgressRings(totalElapsed, phaseElapsed, phaseDuration, config.totalDurationSecs);
+    const intervalTimerVal = Math.floor(phaseDuration - phaseElapsed);
+    this.timerDisplay.textContent = formatTime(intervalTimerVal);
+    this.updateIntervalLabelAndTitle(state, config, totalElapsed, intervalTimerVal);
+  }
+
+  private updateProgressRings(
+    totalElapsed: number,
+    phaseElapsed: number,
+    phaseDuration: number,
+    totalDurationSecs: number,
+  ): void {
     const totalProgress = calculateTotalProgress({
       elapsed: totalElapsed,
-      totalDuration: config.totalDurationSecs,
+      totalDuration: totalDurationSecs,
     });
-    const totalDashOffset = this.TOTAL_CIRCUMFERENCE * (1 - totalProgress);
-    this.totalRing.style.strokeDashoffset = totalDashOffset.toString();
+    this.totalRing.style.strokeDashoffset = (this.TOTAL_CIRCUMFERENCE * (1 - totalProgress)).toString();
 
-    // Interval Progress
-    const currentPhaseElapsed = state.currentPhaseElapsed ?? (totalElapsed % config.intervalSecs);
-    const currentPhaseDuration = state.currentPhaseDuration ?? config.intervalSecs;
-    
-    // Always Emptying: Start at 0 (Full) -> Go to C (Empty)
-    const intervalProgress = currentPhaseElapsed / currentPhaseDuration;
-    const intervalDashOffset = this.INTERVAL_CIRCUMFERENCE * intervalProgress;
+    const intervalProgress = phaseElapsed / phaseDuration;
+    this.intervalRing.style.strokeDashoffset = (
+      this.INTERVAL_CIRCUMFERENCE * intervalProgress
+    ).toString();
+  }
 
-    this.intervalRing.style.strokeDashoffset = intervalDashOffset.toString();
-
-    // Timer Text
-    const intervalTimerVal = Math.floor(currentPhaseDuration - currentPhaseElapsed);
-    this.timerDisplay.textContent = formatTime(intervalTimerVal);
-
+  private updateIntervalLabelAndTitle(
+    state: TimerState,
+    config: TimerConfig,
+    totalElapsed: number,
+    intervalTimerVal: number,
+  ): void {
     if (isFinished(totalElapsed, config.totalDurationSecs)) {
       this.intervalDisplay.textContent = "Done!";
       this.timerDisplay.textContent = formatTime(0);
       document.title = "Done! - EMOM Timer";
-    } else {
-      if (state.currentPhaseName) {
-        this.intervalDisplay.textContent = state.currentPhaseName;
-      } else {
-        // Fallback for EMOM generic rounds
-        const { current, total } = getCurrentRound({
-          elapsed: totalElapsed,
-          intervalDuration: config.intervalSecs,
-          totalDuration: config.totalDurationSecs,
-        });
-        this.intervalDisplay.textContent = `Round ${current}/${total}`;
-      }
-      document.title = `${formatTime(intervalTimerVal)} - EMOM Timer`;
+      return;
     }
+    this.intervalDisplay.textContent = this.resolveIntervalLabelText(state, config, totalElapsed);
+    document.title = `${formatTime(intervalTimerVal)} - EMOM Timer`;
+  }
+
+  private resolveIntervalLabelText(
+    state: TimerState,
+    config: TimerConfig,
+    totalElapsed: number,
+  ): string {
+    if (state.currentPhaseName) {
+      return state.currentPhaseName;
+    }
+    const { current, total } = getCurrentRound({
+      elapsed: totalElapsed,
+      intervalDuration: config.intervalSecs,
+      totalDuration: config.totalDurationSecs,
+    });
+    return `Round ${current}/${total}`;
   }
 
   public updateStreak(streak: number): void {
-    if (this.streakDisplay) {
-      this.streakDisplay.innerText = `Streak: ${streak} day${streak === 1 ? "" : "s"}`;
-    }
+    this.streakDisplay.textContent = `Streak: ${streak} day${streak === 1 ? "" : "s"}`;
   }
 
   public updateFitUI(status: "disconnected" | "connected" | "syncing"): void {
     this.fitIcon.classList.remove("connected", "syncing");
 
-    if (status === "connected") {
-      this.fitIcon.classList.add("connected");
-      this.fitIcon.title = "Google Fit: Connected";
-    } else if (status === "syncing") {
-      this.fitIcon.classList.add("connected", "syncing");
-      this.fitIcon.title = "Google Fit: Syncing...";
-    } else {
-      this.fitIcon.title = "Google Fit: Disconnected";
+    switch (status) {
+      case "connected":
+        this.fitIcon.classList.add("connected");
+        this.fitIcon.title = "Google Fit: Connected";
+        break;
+      case "syncing":
+        this.fitIcon.classList.add("connected", "syncing");
+        this.fitIcon.title = "Google Fit: Syncing...";
+        break;
+      default:
+        this.fitIcon.title = "Google Fit: Disconnected";
     }
   }
 
@@ -145,10 +186,9 @@ export class UIManager {
     document.body.classList.add("victory");
     this.trophyOverlay.classList.add("show");
 
-    // Show continue button after 2 seconds
     setTimeout(() => {
       this.trophyContinueBtn.style.display = "block";
-    }, 2000);
+    }, MS.VICTORY_BUTTON_DELAY);
   }
 
   public clearVisuals(): void {
@@ -159,10 +199,10 @@ export class UIManager {
     this.trophyContinueBtn.style.display = "none";
   }
 
-  // Advanced View Transitions API Helper
   private withTransition(action: () => void): void {
-    if ("startViewTransition" in document) {
-      (document as any).startViewTransition(action);
+    const doc = document as DocumentWithViewTransition;
+    if (typeof doc.startViewTransition === "function") {
+      doc.startViewTransition(action);
     } else {
       action();
     }
@@ -181,15 +221,15 @@ export class UIManager {
   }
 
   public setSettingsInputs(config: TimerConfig): void {
-    if (this.timerModeSelect) this.timerModeSelect.value = config.mode || "emom";
+    this.timerModeSelect.value = config.mode || "emom";
     this.intervalCountInput.value = config.intervalCount.toString();
     this.intervalDurationSelect.value = config.intervalSecs.toString();
-    if (this.activityTypeSelect) this.activityTypeSelect.value = config.activityType.toString();
-    if (this.locationToggle) this.locationToggle.checked = config.includeLocation;
+    this.activityTypeSelect.value = config.activityType.toString();
+    this.locationToggle.checked = config.includeLocation;
   }
 
   public setStartBtnText(text: string): void {
-    this.startBtn.innerText = text;
+    this.startBtn.textContent = text;
   }
 
   public setStartBtnDisabled(disabled: boolean): void {
@@ -202,50 +242,42 @@ export class UIManager {
 
   public showCountdown(count: number): void {
     this.timerDisplay.textContent = "READY";
-    this.intervalDisplay.textContent = "Starting in " + count;
+    this.intervalDisplay.textContent = `Starting in ${count}`;
   }
 
   public showToast(
     message: string,
     type: "success" | "error" | "info" = "info",
-    duration: number = 3000,
+    duration: number = MS.TOAST_DEFAULT,
   ): void {
     const toast = document.createElement("div");
     toast.className = `toast toast-${type}`;
 
-    // Add icon based on type
-    let icon = "ℹ️";
-    if (type === "success") {
-      icon = "✅";
-    } else if (type === "error") {
-      icon = "❌";
-    }
-    toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+    const icon = TOAST_ICONS[type] ?? TOAST_ICONS.info;
+    const iconSpan = document.createElement("span");
+    iconSpan.textContent = icon;
+    const msgSpan = document.createElement("span");
+    msgSpan.textContent = message;
 
+    toast.appendChild(iconSpan);
+    toast.appendChild(msgSpan);
     this.toastContainer.appendChild(toast);
 
-    // Auto-dismiss after duration
     setTimeout(() => {
       toast.classList.add("toast-hiding");
-      setTimeout(() => {
-        if (toast.parentNode) {
-          toast.remove();
-        }
-      }, 200); // Match fade-out animation duration
+      setTimeout(() => toast.remove(), MS.TOAST_FADE);
     }, duration);
   }
 
   public showSyncConfirmation(): void {
-    this.showToast("Saved to Google Fit!", "success", 3000);
+    this.showToast("Saved to Google Fit!", "success", MS.TOAST_DEFAULT);
 
-    // Brief pulse animation on fit icon
     this.fitIcon.style.animation = "none";
+    void this.fitIcon.offsetWidth;
+    this.fitIcon.style.animation = `pulse-blue ${MS.PULSE_DURATION}ms ease-out`;
     setTimeout(() => {
-      this.fitIcon.style.animation = "pulse-blue 0.5s ease-out";
-      setTimeout(() => {
-        this.fitIcon.style.animation = "";
-      }, 500);
-    }, 10);
+      this.fitIcon.style.animation = "";
+    }, MS.PULSE_DURATION);
   }
 
   public showSyncError(): void {

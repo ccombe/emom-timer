@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 // Explicitly fake value used only to verify the OAuth callback path — not a real credential
-const TEST_OAUTH_PLACEHOLDER = '[test-only-not-a-real-token]';
+const TEST_OAUTH_PLACEHOLDER = 'dummy-auth-value-for-testing';
 
 test.describe('Google Fit Integration', () => {
   test.beforeEach(async ({ page }) => {
@@ -26,7 +26,7 @@ test.describe('Google Fit Integration', () => {
 
   test('Clicking connect button triggers GIS token request (mocked)', async ({ page }) => {
     // Inject a mock google.accounts.oauth2 before clicking
-    await page.evaluate(() => {
+    await page.evaluate((mockToken) => {
       (globalThis as any).__mockTokenRequested = false;
       (globalThis as any).google = {
         accounts: {
@@ -35,13 +35,13 @@ test.describe('Google Fit Integration', () => {
               requestAccessToken: () => {
                 (globalThis as any).__mockTokenRequested = true;
                 // Simulate a successful token response
-                config.callback({ access_token: TEST_OAUTH_PLACEHOLDER, expires_in: 3600 });
+                config.callback({ access_token: mockToken, expires_in: 3600 });
               },
             }),
           },
         },
       };
-    });
+    }, TEST_OAUTH_PLACEHOLDER);
 
     await page.locator('#connect-google-fit-btn').click();
     await page.locator('#close-settings-btn').click();
