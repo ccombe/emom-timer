@@ -1,5 +1,14 @@
 import { ISpeechService, WebSpeechAdapter } from "./adapters.ts";
 
+interface ScheduledTone {
+  frequency: number;
+  type: OscillatorType;
+  startTime: number;
+  attackTime: number;
+  duration: number;
+  peakGain: number;
+}
+
 export class AudioManager {
   private audioCtx: AudioContext | undefined;
   private readonly speechAdapter: ISpeechService;
@@ -9,31 +18,67 @@ export class AudioManager {
     this.speechAdapter = speechAdapter || new WebSpeechAdapter();
   }
 
-  // Audio Context Init (Lazy load on user interaction)
-  public ensureAudioContext(): void {
-    if (!this.audioCtx) {
-      // Check for window.webkitAudioContext if needed, though modern browsers use AudioContext
-      const win = globalThis as any;
-      const AudioContextConstructor = win.AudioContext || win.webkitAudioContext;
-      if (AudioContextConstructor) {
-        this.audioCtx = new AudioContextConstructor();
-      }
-    } else if (this.audioCtx.state === "suspended") {
-      this.audioCtx.resume();
+  private pickAudioContextConstructor():
+    | (new (contextOptions?: AudioContextOptions) => AudioContext)
+    | undefined {
+    const win = globalThis as unknown as {
+      AudioContext?: typeof AudioContext;
+      webkitAudioContext?: typeof AudioContext;
+    };
+    return win.AudioContext ?? win.webkitAudioContext;
+  }
+
+  private createAudioContextIfNeeded(): void {
+    const Ctor = this.pickAudioContextConstructor();
+    if (Ctor) {
+      this.audioCtx = new Ctor();
     }
   }
 
-  private createOscillatorAndGain(): { osc: OscillatorNode; gainNode: GainNode; ctx: AudioContext } | null {
-    this.ensureAudioContext();
-    if (!this.audioCtx) return null;
+  // Audio Context Init (Lazy load on user interaction)
+  public ensureAudioContext(): void {
+    if (!this.audioCtx) {
+      this.createAudioContextIfNeeded();
+      return;
+    }
+    if (this.audioCtx.state === "suspended") {
+      void this.audioCtx.resume();
+    }
+  }
 
-    const osc = this.audioCtx.createOscillator();
-    const gainNode = this.audioCtx.createGain();
+  private getAudioContext(): AudioContext | undefined {
+    this.ensureAudioContext();
+    return this.audioCtx;
+  }
+
+  private createOscillatorAndGain(): { osc: OscillatorNode; gainNode: GainNode; ctx: AudioContext } | null {
+    const ctx = this.getAudioContext();
+    if (!ctx) return null;
+
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
 
     osc.connect(gainNode);
-    gainNode.connect(this.audioCtx.destination);
+    gainNode.connect(ctx.destination);
 
-    return { osc, gainNode, ctx: this.audioCtx };
+    return { osc, gainNode, ctx };
+  }
+
+  private scheduleTone(tone: ScheduledTone): void {
+    const nodes = this.createOscillatorAndGain();
+    if (!nodes) return;
+    const { osc, gainNode } = nodes;
+    const { frequency, type, startTime, attackTime, duration, peakGain } = tone;
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(frequency, startTime);
+
+    gainNode.gain.setValueAtTime(0, startTime);
+    gainNode.gain.linearRampToValueAtTime(peakGain, startTime + attackTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+    osc.start(startTime);
+    osc.stop(startTime + duration);
   }
 
   public playBell(): void {
@@ -63,11 +108,11 @@ export class AudioManager {
 
     const nodes = this.createOscillatorAndGain();
     if (!nodes) return;
-    
+
     this.silentOsc = nodes.osc;
     const gainNode = nodes.gainNode;
     gainNode.gain.value = 0; // Absolute silence
-    
+
     this.silentOsc.start();
   }
 
@@ -76,81 +121,56 @@ export class AudioManager {
       try {
         this.silentOsc.stop();
         this.silentOsc.disconnect();
-      } catch (e: unknown) {
-        console.warn("Failed to stop silent oscillator", e);
+      } catch {
+        // Oscillator may already be stopped; safe to ignore
       }
       this.silentOsc = undefined;
     }
   }
 
-
-
   public playCountdownBeep(frequency: number = 440): void {
-    const nodes = this.createOscillatorAndGain();
-    if (!nodes) return;
-    const { osc, gainNode, ctx } = nodes;
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
 
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(frequency, ctx.currentTime);
-
-    // Short pip
-    gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-
-    osc.start();
-    osc.stop(ctx.currentTime + 0.1);
+    this.scheduleTone({
+      frequency,
+      type: "sine",
+      startTime: ctx.currentTime,
+      attackTime: 0,
+      duration: 0.1,
+      peakGain: 0.2,
+    });
   }
 
   public playEndSound(): void {
-    this.ensureAudioContext();
-    if (!this.audioCtx) return;
-    const ctx = this.audioCtx;
-
-    // Victory Fanfare: Rising C Major Arpeggio + Chord
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
-    // Notes: C5, E5, G5, C6
+    // Victory Fanfare: Rising C Major Arpeggio + Chord
     const notes = [523.25, 659.25, 783.99, 1046.5];
+    const stagger = 0.1;
+    const noteDuration = 0.8;
 
     notes.forEach((freq, i) => {
-      const nodes = this.createOscillatorAndGain();
-      if (!nodes) return;
-      const { osc, gainNode } = nodes;
-
-      osc.type = "triangle"; // triangle sounds a bit more 'gamey'/'fun' than sine
-      osc.frequency.value = freq;
-
-      // Stagger starts: 0, 0.1, 0.2, 0.3
-      const startTime = now + i * 0.1;
-      const duration = 0.8;
-
-      gainNode.gain.setValueAtTime(0, startTime);
-      gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-
-      osc.start(startTime);
-      osc.stop(startTime + duration);
+      this.scheduleTone({
+        frequency: freq,
+        type: "triangle",
+        startTime: now + i * stagger,
+        attackTime: 0.05,
+        duration: noteDuration,
+        peakGain: 0.3,
+      });
     });
 
     // Final root chord hold for extra punch
-    setTimeout(() => {
-      // Check if ctx is still valid
-      if (ctx.state === "closed") return;
-
-      const nodes = this.createOscillatorAndGain();
-      if (!nodes) return;
-      const { osc, gainNode } = nodes;
-
-      osc.type = "square"; // chiptune style punch
-      osc.frequency.value = 523.25; // C5
-
-      const finalStart = now + 0.4;
-      gainNode.gain.setValueAtTime(0, finalStart);
-      gainNode.gain.linearRampToValueAtTime(0.2, finalStart + 0.05);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, finalStart + 1.5);
-
-      osc.start(finalStart);
-      osc.stop(finalStart + 1.5);
-    }, 0);
+    this.scheduleTone({
+      frequency: 523.25,
+      type: "square",
+      startTime: now + 0.4,
+      attackTime: 0.05,
+      duration: 1.5,
+      peakGain: 0.2,
+    });
   }
 }

@@ -1,16 +1,19 @@
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import fs from "node:fs";
+
+const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 // Dynamically find all HTML files in the root directory
 const htmlFiles = fs
-  .readdirSync(__dirname)
+  .readdirSync(projectRoot)
   .filter((file) => file.endsWith(".html"))
   .reduce((entries, file) => {
     const name = file.replace(".html", "");
     // Vite expects the main entry to be named 'main'
-    entries[name === "index" ? "main" : name] = resolve(__dirname, file);
+    entries[name === "index" ? "main" : name] = resolve(projectRoot, file);
     return entries;
   }, {});
 
@@ -44,8 +47,8 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        enabled: !process.env.CI
-      }
+        enabled: !process.env.CI,
+      },
     }),
   ],
   server: {
@@ -54,7 +57,7 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
-    setupFiles: ["fake-indexeddb/auto"],
+    setupFiles: ["./src/vitest.setup.ts"],
     exclude: ["tests/e2e/**", "node_modules/**"],
   },
 });
