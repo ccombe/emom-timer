@@ -1,0 +1,30 @@
+[env]
+# Set NODE_ENV for development
+NODE_ENV = "development"
+
+[tools]
+# Node.js - pinned to v24 (LTS)
+node = "24"
+
+# pnpm - latest version
+pnpm = "11.9.0"
+
+[tasks.install]
+description = "Install project dependencies"
+run = "pnpm install"
+
+[tasks.dev]
+description = "Start development server"
+run = "pnpm dev"
+
+[tasks.build]
+description = "Build for production"
+run = "pnpm build"
+
+[tasks.test]
+description = "Run tests"
+run = "pnpm test"
+
+[tasks.lint]
+description = "Run linter"
+run = "pnpm lint"
