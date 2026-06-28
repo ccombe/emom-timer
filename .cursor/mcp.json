@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "fallow": {
+      "type": "stdio",
+      "command": "pnpm",
+      "args": ["exec", "fallow-mcp"],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "FALLOW_BIN": "${workspaceFolder}${/}node_modules${/}.bin${/}fallow"
+      }
+    }
+  }
+}

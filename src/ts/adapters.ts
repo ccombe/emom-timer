@@ -6,14 +6,14 @@ export interface ISpeechService {
   cancel(): void;
 }
 
-export interface IMediaSessionOptions {
+interface IMediaSessionOptions {
   title: string;
   artist: string;
   onPlay: () => void;
   onPause: () => void;
 }
 
-export interface IMediaSessionService {
+interface IMediaSessionService {
   configure(options: IMediaSessionOptions): void;
   clear(): void;
 }

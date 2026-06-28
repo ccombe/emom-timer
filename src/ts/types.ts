@@ -1,6 +1,6 @@
 export type TimerMode = "emom" | "fartlek";
 
-export interface TimerPhase {
+interface TimerPhase {
   name: string;
   durationSecs: number;
 }
@@ -67,7 +67,7 @@ export interface GoogleTokenResponse {
   error?: string;
 }
 
-export interface LocationData {
+interface LocationData {
   lat: number;
   lng: number;
 }
