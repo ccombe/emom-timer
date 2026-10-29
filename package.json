@@ -39,7 +39,7 @@
     "eslint-plugin-sonarjs": "^4.2.2",
     "eslint-plugin-testing-library": "^7.16.2",
     "fake-indexeddb": "^6.2.5",
-    "fallow": "^3.33.1",
+    "fallow": "^3.34.0",
     "idb": "^8.0.4",
     "jsdom": "^30.1.2",
     "oxfmt": "^0.72.0",
