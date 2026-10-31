@@ -30,6 +30,9 @@
     "dead-code": "fallow dead-code --fail-on-issues",
     "mcp:fallow": "fallow-mcp"
   },
+  "dependencies": {
+    "idb": "^8.0.4"
+  },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.64.0",
@@ -39,8 +42,7 @@
     "eslint-plugin-sonarjs": "^4.2.2",
     "eslint-plugin-testing-library": "^7.16.2",
     "fake-indexeddb": "^6.2.5",
-    "fallow": "^3.33.1",
-    "idb": "^8.0.4",
+    "fallow": "^3.38.1",
     "jsdom": "^30.1.2",
     "oxfmt": "^0.72.0",
     "oxlint": "^1.87.0",
