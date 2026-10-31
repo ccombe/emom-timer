@@ -2,7 +2,7 @@
 
 ## Fallow MCP Server
 
-The `fallow-mcp` MCP server is configured in `~/.config/opencode/opencode.json` and provides codebase intelligence tools:
+The `fallow-mcp` MCP server is project-scoped, not global: register it in your own opencode config (or a project-local one) as `pnpm mcp:fallow`. It provides codebase intelligence tools:
 
 | Tool | Purpose |
 |------|---------|

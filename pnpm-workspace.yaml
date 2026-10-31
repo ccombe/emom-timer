@@ -50,9 +50,16 @@ minimumReleaseAgeExclude:
   - oxfmt@0.64.0
   - oxlint@1.79.0
   - vitest@4.1.11
+  - '@fallow-cli/darwin-arm64@3.38.1'
+  - '@fallow-cli/darwin-x64@3.38.1'
+  - '@fallow-cli/linux-arm64-gnu@3.38.1'
+  - '@fallow-cli/linux-arm64-musl@3.38.1'
+  - '@fallow-cli/linux-x64-gnu@3.38.1'
+  - '@fallow-cli/linux-x64-musl@3.38.1'
+  - '@fallow-cli/win32-arm64-msvc@3.38.1'
+  - '@fallow-cli/win32-x64-msvc@3.38.1'
+  - fallow-type-aware@3.38.1
+  - fallow@3.38.1
 overrides:
   'rollup@>=4.0.0 <4.59.0': '>=4.59.0'
   'serialize-javascript': '^7.0.5'
-
-
-
